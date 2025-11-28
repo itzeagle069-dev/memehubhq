@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // MEMES COLLECTION
+    match /memes/{memeId} {
+      // Anyone can view memes
+      allow read: if true;
+      
+      // Only logged-in users can upload
+      allow create: if request.auth != null;
+      
+      // Only the uploader or admins can edit/delete
+      // (We'll add admin logic later if needed, for now uploader only)
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.uploader_id;
+    }
+    
+    // USERS COLLECTION (if you use it)
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

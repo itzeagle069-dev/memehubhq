@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+    /* Custom color palette */
+    --color-yellow-400: #facc15;
+    --color-yellow-300: #fde047;
+    --color-yellow-500: #eab308;
+    --color-orange-500: #f97316;
+
+    /* Custom spacing if needed */
+    --spacing-18: 4.5rem;
+}
+
+@variant dark (&:where(.dark, .dark *));
+
+/* Base styles */
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        @apply bg-white text-gray-900 dark:bg-[#050505] dark:text-white;
+    }
+}
+
+/* Custom component styles */
+@layer components {
+    .glassmorphism {
+        @apply backdrop-blur-md bg-white/80 dark:bg-black/80;
+    }
+}
