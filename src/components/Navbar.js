@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useDownloadList } from "@/context/DownloadContext";
 import { Menu, X, Search, Upload, LogOut, User as UserIcon, Sun, Moon, ChevronDown, ShoppingBag, Trash2, ShieldAlert, Download, Filter, Check } from "lucide-react";
-import RewardedAdModal from "@/components/RewardedAdModal";
+
 import { toast } from "react-hot-toast";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
@@ -26,7 +26,7 @@ export default function Navbar() {
     const [theme, setTheme] = useState("dark");
     const [searchQuery, setSearchQuery] = useState("");
     const [pendingCount, setPendingCount] = useState(0);
-    const [showRewardedAd, setShowRewardedAd] = useState(false);
+
 
     // Filter States
     const [showFilter, setShowFilter] = useState(false);
@@ -138,16 +138,13 @@ export default function Navbar() {
         e.preventDefault();
     };
 
-    const handleBatchDownload = () => {
+    const handleBatchDownload = async () => {
         if (!user) {
             toast.error("Please login to download multiple files!");
             googleLogin();
             return;
         }
-        setShowRewardedAd(true);
-    };
 
-    const performBatchDownload = async () => {
         const toastId = toast.loading(`Preparing ${downloadList.length} memes...`);
         let count = 0;
         for (const meme of downloadList) {
@@ -501,13 +498,7 @@ export default function Navbar() {
                     </div>
                 </div>
             )}
-            {/* Rewarded Ad Modal for Batch Download */}
-            <RewardedAdModal
-                isOpen={showRewardedAd}
-                onClose={() => setShowRewardedAd(false)}
-                onComplete={performBatchDownload}
-                duration={30} // 30 seconds for multi-download
-            />
+
         </>
     );
 }

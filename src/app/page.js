@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import RewardedAdModal from "@/components/RewardedAdModal";
+
 import { TrendingUp, Smile, Video, Music, Sparkles, Download, Share2, Clock, Eye, X, Play, Trash2, MoreVertical, Edit2, Plus, Check, ShieldAlert } from "lucide-react";
 import { useEffect, useState, Suspense } from "react";
 import { db } from "@/lib/firebase";
@@ -80,10 +80,7 @@ function HomeContent() {
     const [selectedMemes, setSelectedMemes] = useState([]);
     const [isSelectionMode, setIsSelectionMode] = useState(false);
 
-    // Rewarded ad state for downloads
-    const [showRewardedAd, setShowRewardedAd] = useState(false);
-    const [adDuration, setAdDuration] = useState(15);
-    const [pendingDownload, setPendingDownload] = useState(null);
+
 
     const isAdmin = user?.uid === ADMIN_IDS[0];
 
@@ -334,25 +331,9 @@ function HomeContent() {
         }
     };
 
-    // Handle Download with Rewarded Ad
+    // Handle Download
     const handleDownload = async (e, memeId, url, filename) => {
         e.stopPropagation();
-
-        // Store download details
-        setPendingDownload({ memeId, url, filename });
-
-        // Determine ad duration: 15s for single download
-        setAdDuration(15);
-
-        // Show rewarded ad
-        setShowRewardedAd(true);
-    };
-
-    // Actually perform download after ad completes
-    const performDownload = async () => {
-        if (!pendingDownload) return;
-
-        const { memeId, url, filename } = pendingDownload;
 
         try {
             const memeRef = doc(db, "memes", memeId);
@@ -373,8 +354,6 @@ function HomeContent() {
         } catch (error) {
             console.error("Download failed:", error);
             window.open(url, '_blank');
-        } finally {
-            setPendingDownload(null);
         }
     };
 
@@ -1001,13 +980,7 @@ function HomeContent() {
                     </div>
                 </div>
             )}
-            {/* Rewarded Ad Modal */}
-            <RewardedAdModal
-                isOpen={showRewardedAd}
-                onClose={() => setShowRewardedAd(false)}
-                onComplete={performDownload}
-                duration={adDuration}
-            />
+
         </div>
     );
 }
