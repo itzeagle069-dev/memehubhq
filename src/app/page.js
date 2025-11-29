@@ -211,21 +211,26 @@ function HomeContent() {
             setHasMore(true);
 
             try {
-                // Fetch up to 100 memes (no orderBy to avoid needing Firestore index)
-                // Sorting is done in JavaScript below
-                const ITEMS_PER_PAGE = 100;
+                const ITEMS_PER_PAGE = 30;
 
+                // STRATEGY: Query by createdAt ONLY (no composite index needed)
+                // We filter for "published" status in the client
                 let q = query(
                     collection(db, "memes"),
-                    where("status", "==", "published"),
+                    orderBy("createdAt", "desc"),
                     limit(ITEMS_PER_PAGE)
                 );
 
                 const snapshot = await getDocs(q);
-                let fetchedMemes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                let allFetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                // Pagination disabled (requires Firestore index with orderBy)
-                setHasMore(false);
+                // Client-side filter for published memes
+                let fetchedMemes = allFetched.filter(m => m.status === "published");
+
+                // Set pagination cursor (based on the raw snapshot, not filtered)
+                const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+                setLastVisible(lastDoc);
+                setHasMore(snapshot.docs.length === ITEMS_PER_PAGE);
 
                 // 1. Search Filtering
                 if (searchQuery) {
@@ -312,14 +317,16 @@ function HomeContent() {
 
             let q = query(
                 collection(db, "memes"),
-                where("status", "==", "published"),
                 orderBy("createdAt", "desc"),
                 startAfter(lastVisible),
                 limit(ITEMS_PER_PAGE)
             );
 
             const snapshot = await getDocs(q);
-            let fetchedMemes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            let allFetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // Client-side filter
+            let fetchedMemes = allFetched.filter(m => m.status === "published");
 
             // Update pagination cursor
             const lastDoc = snapshot.docs[snapshot.docs.length - 1];
