@@ -307,20 +307,9 @@ function HomeContent() {
                     } else {
                         fetchedMemes.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
                     }
-                } else {
-                    // Custom Sort Selected - Enforce it client-side
-                    if (sortBy === "oldest") {
-                        fetchedMemes.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
-                    } else if (sortBy === "popular") {
-                        fetchedMemes.sort((a, b) => (b.views || 0) - (a.views || 0));
-                    } else if (sortBy === "downloads") {
-                        fetchedMemes.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
-                    } else if (sortBy === "reacted") {
-                        fetchedMemes.sort((a, b) => (b.reactions?.haha || 0) - (a.reactions?.haha || 0));
-                    } else if (sortBy === "a_z") {
-                        fetchedMemes.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
-                    }
                 }
+                // For other sort options (A-Z, Popular, etc.), we rely PURELY on Firestore order
+                // to ensure pagination works correctly across the entire database.
 
                 setMemes(fetchedMemes);
             } catch (error) {
@@ -433,20 +422,8 @@ function HomeContent() {
                 } else {
                     fetchedMemes.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
                 }
-            } else {
-                // Custom Sort Selected - Enforce it client-side
-                if (sortBy === "oldest") {
-                    fetchedMemes.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
-                } else if (sortBy === "popular") {
-                    fetchedMemes.sort((a, b) => (b.views || 0) - (a.views || 0));
-                } else if (sortBy === "downloads") {
-                    fetchedMemes.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
-                } else if (sortBy === "reacted") {
-                    fetchedMemes.sort((a, b) => (b.reactions?.haha || 0) - (a.reactions?.haha || 0));
-                } else if (sortBy === "a_z") {
-                    fetchedMemes.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
-                }
             }
+            // For other sort options, rely on Firestore order
 
             // Append to existing memes
             setMemes(prev => [...prev, ...fetchedMemes]);
