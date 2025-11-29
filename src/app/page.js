@@ -3,9 +3,9 @@
 import Link from "next/link";
 
 import { TrendingUp, Smile, Video, Music, Sparkles, Download, Share2, Clock, Eye, X, Play, Trash2, MoreVertical, Edit2, Plus, Check, ShieldAlert } from "lucide-react";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useRef } from "react";
 import { db } from "@/lib/firebase";
-import { collection, query, where, limit, getDocs, updateDoc, doc, increment, arrayUnion, arrayRemove, deleteDoc, setDoc, getDoc } from "firebase/firestore";
+import { collection, query, where, limit, getDocs, updateDoc, doc, increment, arrayUnion, arrayRemove, deleteDoc, setDoc, getDoc, orderBy, startAfter } from "firebase/firestore";
 import { useAuth } from "@/context/AuthContext";
 import { useDownloadList } from "@/context/DownloadContext";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -60,6 +60,11 @@ function HomeContent() {
     const [activeCategory, setActiveCategory] = useState("all");
     const [selectedMeme, setSelectedMeme] = useState(null);
 
+    // Pagination states
+    const [lastVisible, setLastVisible] = useState(null);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+
     // Edit & Menu State
     const [openMenuId, setOpenMenuId] = useState(null);
     const [editingMeme, setEditingMeme] = useState(null);
@@ -80,6 +85,8 @@ function HomeContent() {
     const [selectedMemes, setSelectedMemes] = useState([]);
     const [isSelectionMode, setIsSelectionMode] = useState(false);
 
+    // Ref for infinite scroll observer
+    const loadMoreRef = useRef(null);
 
 
     const isAdmin = user?.uid === ADMIN_IDS[0];
@@ -195,19 +202,31 @@ function HomeContent() {
         }
     }, [paramCategory]);
 
-    // Fetch Memes
+    // Fetch Memes (Initial Load)
     useEffect(() => {
         const fetchMemes = async () => {
             setLoading(true);
+            setMemes([]);
+            setLastVisible(null);
+            setHasMore(true);
+
             try {
+                const ITEMS_PER_PAGE = 30;
+
                 let q = query(
                     collection(db, "memes"),
                     where("status", "==", "published"),
-                    limit(100)
+                    orderBy("createdAt", "desc"),
+                    limit(ITEMS_PER_PAGE)
                 );
 
                 const snapshot = await getDocs(q);
                 let fetchedMemes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // Set pagination cursor
+                const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+                setLastVisible(lastDoc);
+                setHasMore(snapshot.docs.length === ITEMS_PER_PAGE);
 
                 // 1. Search Filtering
                 if (searchQuery) {
@@ -283,6 +302,127 @@ function HomeContent() {
 
         fetchMemes();
     }, [activeCategory, searchQuery, paramCategory, paramLanguage, paramDate, paramType]);
+
+    // Load More Memes (Pagination)
+    const loadMoreMemes = async () => {
+        if (!lastVisible || !hasMore || loadingMore) return;
+
+        setLoadingMore(true);
+        try {
+            const ITEMS_PER_PAGE = 30;
+
+            let q = query(
+                collection(db, "memes"),
+                where("status", "==", "published"),
+                orderBy("createdAt", "desc"),
+                startAfter(lastVisible),
+                limit(ITEMS_PER_PAGE)
+            );
+
+            const snapshot = await getDocs(q);
+            let fetchedMemes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // Update pagination cursor
+            const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+            setLastVisible(lastDoc);
+            setHasMore(snapshot.docs.length === ITEMS_PER_PAGE);
+
+            // Apply same filters as initial load
+            if (searchQuery) {
+                fetchedMemes = fetchedMemes.filter(m =>
+                    m.title?.toLowerCase().includes(searchQuery) ||
+                    m.tags?.some(tag => tag.toLowerCase().includes(searchQuery))
+                );
+            }
+
+            const isSpecialCategory = ["trending", "recent", "most_downloaded", "viral", "image", "video", "audio", "all"].includes(paramCategory);
+
+            if (paramCategory && !isSpecialCategory) {
+                fetchedMemes = fetchedMemes.filter(m => m.category === paramCategory);
+            }
+            if (paramLanguage) {
+                fetchedMemes = fetchedMemes.filter(m => m.language === paramLanguage);
+            }
+            if (paramType && paramType !== "all") {
+                if (paramType === "audio") {
+                    fetchedMemes = fetchedMemes.filter(m => m.media_type === "raw" || m.media_type === "audio" || m.file_url.endsWith(".mp3"));
+                } else {
+                    fetchedMemes = fetchedMemes.filter(m => m.media_type === paramType);
+                }
+            }
+            if (paramDate && paramDate !== "all") {
+                const now = new Date();
+                fetchedMemes = fetchedMemes.filter(m => {
+                    const createdAt = m.createdAt?.toDate ? m.createdAt.toDate() : new Date(m.createdAt);
+                    const diffSeconds = (now - createdAt) / 1000;
+
+                    if (paramDate === "1h") return diffSeconds < 3600;
+                    if (paramDate === "today") return diffSeconds < 86400;
+                    if (paramDate === "week") return diffSeconds < 604800;
+                    if (paramDate === "month") return diffSeconds < 2592000;
+                    if (paramDate === "year") return diffSeconds < 31536000;
+                    return true;
+                });
+            }
+
+            // Apply category sorting
+            if (activeCategory === "trending") {
+                const twoDaysAgo = new Date();
+                twoDaysAgo.setHours(twoDaysAgo.getHours() - 48);
+                fetchedMemes = fetchedMemes.filter(m => m.createdAt?.toDate() > twoDaysAgo);
+                fetchedMemes.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
+            } else if (activeCategory === "most_downloaded") {
+                fetchedMemes.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
+            } else if (activeCategory === "viral") {
+                fetchedMemes.sort((a, b) => (b.reactions?.haha || 0) - (a.reactions?.haha || 0));
+            } else if (activeCategory === "recent") {
+                fetchedMemes.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+            } else if (activeCategory === "image") {
+                fetchedMemes = fetchedMemes.filter(m => m.media_type === "image");
+                fetchedMemes.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+            } else if (activeCategory === "video") {
+                fetchedMemes = fetchedMemes.filter(m => m.media_type === "video");
+                fetchedMemes.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+            } else if (activeCategory === "audio") {
+                fetchedMemes = fetchedMemes.filter(m => m.media_type === "raw" || m.media_type === "audio" || m.file_url.endsWith(".mp3"));
+                fetchedMemes.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+            } else {
+                fetchedMemes.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+            }
+
+            // Append to existing memes
+            setMemes(prev => [...prev, ...fetchedMemes]);
+        } catch (error) {
+            console.error("Error loading more memes:", error);
+        } finally {
+            setLoadingMore(false);
+        }
+    };
+
+    // Intersection Observer for automatic infinite scroll
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const [entry] = entries;
+                if (entry.isIntersecting && hasMore && !loadingMore && !loading) {
+                    loadMoreMemes();
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        const currentRef = loadMoreRef.current;
+        if (currentRef) {
+            observer.observe(currentRef);
+        }
+
+        return () => {
+            if (currentRef) {
+                observer.unobserve(currentRef);
+            }
+        };
+    }, [hasMore, loadingMore, loading]);
+
 
     // Handle Reaction
     const handleReaction = async (e, meme) => {
@@ -796,6 +936,29 @@ function HomeContent() {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                )}
+
+                {/* LOAD MORE BUTTON */}
+                {!loading && memes.length > 0 && hasMore && (
+                    <div ref={loadMoreRef} className="mt-12 flex justify-center">
+                        <button
+                            onClick={loadMoreMemes}
+                            disabled={loadingMore}
+                            className="px-8 py-4 bg-yellow-400 text-black rounded-full font-bold text-lg hover:bg-yellow-500 transition-all hover:scale-105 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-2"
+                        >
+                            {loadingMore ? (
+                                <>
+                                    <div className="w-5 h-5 border-3 border-black border-t-transparent rounded-full animate-spin"></div>
+                                    Loading...
+                                </>
+                            ) : (
+                                <>
+                                    <Download size={20} />
+                                    Load More Memes
+                                </>
+                            )}
+                        </button>
                     </div>
                 )}
             </div>
