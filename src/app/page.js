@@ -211,22 +211,21 @@ function HomeContent() {
             setHasMore(true);
 
             try {
-                const ITEMS_PER_PAGE = 30;
+                // Fetch up to 100 memes (no orderBy to avoid needing Firestore index)
+                // Sorting is done in JavaScript below
+                const ITEMS_PER_PAGE = 100;
 
                 let q = query(
                     collection(db, "memes"),
                     where("status", "==", "published"),
-                    orderBy("createdAt", "desc"),
                     limit(ITEMS_PER_PAGE)
                 );
 
                 const snapshot = await getDocs(q);
                 let fetchedMemes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                // Set pagination cursor
-                const lastDoc = snapshot.docs[snapshot.docs.length - 1];
-                setLastVisible(lastDoc);
-                setHasMore(snapshot.docs.length === ITEMS_PER_PAGE);
+                // Pagination disabled (requires Firestore index with orderBy)
+                setHasMore(false);
 
                 // 1. Search Filtering
                 if (searchQuery) {
