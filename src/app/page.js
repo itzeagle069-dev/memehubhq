@@ -408,28 +408,44 @@ function HomeContent() {
             }
 
             // Apply category sorting
+            // Apply category sorting (Filters Only)
             if (activeCategory === "trending") {
                 const twoDaysAgo = new Date();
                 twoDaysAgo.setHours(twoDaysAgo.getHours() - 48);
                 fetchedMemes = fetchedMemes.filter(m => m.createdAt?.toDate() > twoDaysAgo);
-                fetchedMemes.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
-            } else if (activeCategory === "most_downloaded") {
-                fetchedMemes.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
-            } else if (activeCategory === "viral") {
-                fetchedMemes.sort((a, b) => (b.reactions?.haha || 0) - (a.reactions?.haha || 0));
-            } else if (activeCategory === "recent") {
-                fetchedMemes.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
             } else if (activeCategory === "image") {
                 fetchedMemes = fetchedMemes.filter(m => m.media_type === "image");
-                fetchedMemes.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
             } else if (activeCategory === "video") {
                 fetchedMemes = fetchedMemes.filter(m => m.media_type === "video");
-                fetchedMemes.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
             } else if (activeCategory === "audio") {
                 fetchedMemes = fetchedMemes.filter(m => m.media_type === "raw" || m.media_type === "audio" || m.file_url.endsWith(".mp3"));
-                fetchedMemes.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+            }
+
+            // Sorting Logic
+            if (sortBy === "newest") {
+                // Default behavior: adhere to category presets
+                if (activeCategory === "trending") {
+                    fetchedMemes.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
+                } else if (activeCategory === "most_downloaded") {
+                    fetchedMemes.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
+                } else if (activeCategory === "viral") {
+                    fetchedMemes.sort((a, b) => (b.reactions?.haha || 0) - (a.reactions?.haha || 0));
+                } else {
+                    fetchedMemes.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                }
             } else {
-                fetchedMemes.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                // Custom Sort Selected - Enforce it client-side
+                if (sortBy === "oldest") {
+                    fetchedMemes.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+                } else if (sortBy === "popular") {
+                    fetchedMemes.sort((a, b) => (b.views || 0) - (a.views || 0));
+                } else if (sortBy === "downloads") {
+                    fetchedMemes.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
+                } else if (sortBy === "reacted") {
+                    fetchedMemes.sort((a, b) => (b.reactions?.haha || 0) - (a.reactions?.haha || 0));
+                } else if (sortBy === "a_z") {
+                    fetchedMemes.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+                }
             }
 
             // Append to existing memes
