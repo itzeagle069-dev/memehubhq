@@ -323,7 +323,7 @@ function HomeContent() {
     }, [activeCategory, searchQuery, paramCategory, paramLanguage, paramDate, paramType, sortBy]);
 
     // Load More Memes (Pagination)
-    const loadMoreMemes = async () => {
+    const loadMoreMemes = useCallback(async () => {
         if (!lastVisible || !hasMore || loadingMore) return;
 
         setLoadingMore(true);
@@ -432,7 +432,7 @@ function HomeContent() {
         } finally {
             setLoadingMore(false);
         }
-    };
+    }, [lastVisible, hasMore, loadingMore, sortBy, activeCategory, paramCategory, paramLanguage, paramType, paramDate, searchQuery]);
 
     // Intersection Observer for automatic infinite scroll
     useEffect(() => {
@@ -456,7 +456,7 @@ function HomeContent() {
                 observer.unobserve(currentRef);
             }
         };
-    }, [hasMore, loadingMore, loading]);
+    }, [hasMore, loadingMore, loading, loadMoreMemes]);
 
 
     // Handle Reaction
