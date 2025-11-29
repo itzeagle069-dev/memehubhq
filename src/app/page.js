@@ -58,6 +58,7 @@ function HomeContent() {
     const [memes, setMemes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeCategory, setActiveCategory] = useState("all");
+    const [sortBy, setSortBy] = useState("newest"); // newest, oldest, popular, a_z, downloads, reacted
     const [selectedMeme, setSelectedMeme] = useState(null);
 
     // Pagination states
@@ -207,17 +208,26 @@ function HomeContent() {
         const fetchMemes = async () => {
             setLoading(true);
             setMemes([]);
-            setLastVisible(null);
             setHasMore(true);
 
             try {
                 const ITEMS_PER_PAGE = 30;
 
-                // STRATEGY: Query by createdAt ONLY (no composite index needed)
+                // Determine Sort Field and Direction
+                let sortField = "createdAt";
+                let sortDir = "desc";
+
+                if (sortBy === "oldest") { sortDir = "asc"; }
+                else if (sortBy === "popular") { sortField = "views"; sortDir = "desc"; }
+                else if (sortBy === "a_z") { sortField = "title"; sortDir = "asc"; }
+                else if (sortBy === "downloads") { sortField = "downloads"; sortDir = "desc"; }
+                else if (sortBy === "reacted") { sortField = "reactions.haha"; sortDir = "desc"; }
+
+                // STRATEGY: Query by Sort Field ONLY (no composite index needed)
                 // We filter for "published" status in the client
                 let q = query(
                     collection(db, "memes"),
-                    orderBy("createdAt", "desc"),
+                    orderBy(sortField, sortDir),
                     limit(ITEMS_PER_PAGE)
                 );
 
@@ -305,7 +315,7 @@ function HomeContent() {
         };
 
         fetchMemes();
-    }, [activeCategory, searchQuery, paramCategory, paramLanguage, paramDate, paramType]);
+    }, [activeCategory, searchQuery, paramCategory, paramLanguage, paramDate, paramType, sortBy]);
 
     // Load More Memes (Pagination)
     const loadMoreMemes = async () => {
@@ -315,9 +325,19 @@ function HomeContent() {
         try {
             const ITEMS_PER_PAGE = 30;
 
+            // Determine Sort Field and Direction
+            let sortField = "createdAt";
+            let sortDir = "desc";
+
+            if (sortBy === "oldest") { sortDir = "asc"; }
+            else if (sortBy === "popular") { sortField = "views"; sortDir = "desc"; }
+            else if (sortBy === "a_z") { sortField = "title"; sortDir = "asc"; }
+            else if (sortBy === "downloads") { sortField = "downloads"; sortDir = "desc"; }
+            else if (sortBy === "reacted") { sortField = "reactions.haha"; sortDir = "desc"; }
+
             let q = query(
                 collection(db, "memes"),
-                orderBy("createdAt", "desc"),
+                orderBy(sortField, sortDir),
                 startAfter(lastVisible),
                 limit(ITEMS_PER_PAGE)
             );
@@ -754,9 +774,28 @@ function HomeContent() {
 
                 {/* 2. CATEGORY TABS */}
                 <div className="flex flex-col gap-4 mb-8">
-                    <h2 className="text-2xl font-bold dark:text-white flex items-center gap-2">
-                        <TrendingUp className="text-yellow-400" /> {activeCategory === 'all' ? 'All Memes' : activeCategory === 'trending' ? 'Trending (Last 48h)' : activeCategory.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                    </h2>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                        <h2 className="text-2xl font-bold dark:text-white flex items-center gap-2">
+                            <TrendingUp className="text-yellow-400" /> {activeCategory === 'all' ? 'All Memes' : activeCategory === 'trending' ? 'Trending (Last 48h)' : activeCategory.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </h2>
+
+                        {/* SORT DROPDOWN */}
+                        <div className="flex items-center gap-2 bg-white dark:bg-[#151515] border border-gray-200 dark:border-gray-800 rounded-full px-4 py-2">
+                            <span className="text-sm text-gray-500 font-medium">Sort by:</span>
+                            <select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value)}
+                                className="bg-transparent border-none outline-none text-sm font-bold text-gray-800 dark:text-white cursor-pointer"
+                            >
+                                <option value="newest">Newest First</option>
+                                <option value="oldest">Oldest First</option>
+                                <option value="popular">Most Popular</option>
+                                <option value="downloads">Most Downloaded</option>
+                                <option value="reacted">Most Reacted</option>
+                                <option value="a_z">A-Z</option>
+                            </select>
+                        </div>
+                    </div>
                     <div className="flex flex-wrap gap-2 pb-2">
                         <CategoryBtn icon={<Sparkles size={16} />} label="All" active={activeCategory === 'all'} onClick={() => setActiveCategory('all')} />
                         <CategoryBtn icon={<TrendingUp size={16} />} label="Trending" active={activeCategory === 'trending'} onClick={() => setActiveCategory('trending')} />

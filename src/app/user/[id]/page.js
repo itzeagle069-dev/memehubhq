@@ -1,10 +1,10 @@
 "use client";
 
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, updateDoc, doc, increment, arrayUnion, arrayRemove } from "firebase/firestore";
+import { collection, query, where, getDocs, updateDoc, doc, increment, arrayUnion, arrayRemove, deleteDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Eye, Download, Smile, Music, Play, X, BookmarkPlus } from "lucide-react";
+import { Eye, Download, Smile, Music, Play, X, BookmarkPlus, MoreVertical, Edit, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useDownloadList } from "@/context/DownloadContext";
@@ -31,6 +31,106 @@ export default function UserProfilePage() {
     const [stats, setStats] = useState({ views: 0, downloads: 0, hahas: 0 });
     const [loading, setLoading] = useState(true);
     const [selectedMeme, setSelectedMeme] = useState(null);
+
+    // Edit & Menu State
+    const [openMenuId, setOpenMenuId] = useState(null);
+    const [editingMeme, setEditingMeme] = useState(null);
+    const [editForm, setEditForm] = useState({});
+    const [newThumbnail, setNewThumbnail] = useState(null);
+    const [thumbnailPreview, setThumbnailPreview] = useState(null);
+    const [saving, setSaving] = useState(false);
+
+    const ADMIN_IDS = ["VZCDwbnsLxcLdEcjabk8wK0pEv33"];
+
+    // Check if user can delete
+    const canDelete = (meme) => {
+        if (!user) return false;
+        if (ADMIN_IDS.includes(user.uid)) return true;
+        if (meme.uploader_id === user.uid) return true;
+        return false;
+    };
+
+    const handleDelete = async (e, meme) => {
+        e.stopPropagation();
+        if (!confirm("Are you sure you want to delete this meme?")) return;
+
+        try {
+            await deleteDoc(doc(db, "memes", meme.id));
+            setMemes(prev => prev.filter(m => m.id !== meme.id));
+            toast.success("Meme deleted!");
+        } catch (error) {
+            console.error("Error deleting meme:", error);
+            toast.error("Failed to delete meme");
+        }
+    };
+
+    const openEditModal = (e, meme) => {
+        e.stopPropagation();
+        setEditingMeme(meme);
+        setEditForm({
+            title: meme.title,
+            category: meme.category,
+            tags: meme.tags ? meme.tags.join(", ") : "",
+        });
+        setOpenMenuId(null);
+    };
+
+    const handleThumbnailChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setNewThumbnail(file);
+            setThumbnailPreview(URL.createObjectURL(file));
+        }
+    };
+
+    const saveEdits = async () => {
+        if (!editingMeme) return;
+        setSaving(true);
+
+        try {
+            let thumbnailUrl = editingMeme.thumbnail_url;
+
+            // Upload new thumbnail if selected
+            if (newThumbnail) {
+                const formData = new FormData();
+                formData.append("file", newThumbnail);
+                formData.append("upload_preset", "memehub_upload");
+                formData.append("cloud_name", "ds6pks59z");
+
+                const res = await fetch(`https://api.cloudinary.com/v1_1/ds6pks59z/image/upload`, {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await res.json();
+                thumbnailUrl = data.secure_url;
+            }
+
+            await updateDoc(doc(db, "memes", editingMeme.id), {
+                title: editForm.title,
+                category: editForm.category,
+                tags: editForm.tags.split(",").map(t => t.trim()).filter(t => t),
+                thumbnail_url: thumbnailUrl
+            });
+
+            setMemes(prev => prev.map(m => m.id === editingMeme.id ? {
+                ...m,
+                title: editForm.title,
+                category: editForm.category,
+                tags: editForm.tags.split(",").map(t => t.trim()).filter(t => t),
+                thumbnail_url: thumbnailUrl
+            } : m));
+
+            setEditingMeme(null);
+            setNewThumbnail(null);
+            setThumbnailPreview(null);
+            toast.success("Meme updated!");
+        } catch (error) {
+            console.error("Error updating meme:", error);
+            toast.error("Failed to update meme");
+        } finally {
+            setSaving(false);
+        }
+    };
 
     useEffect(() => {
         const fetchUserMemes = async () => {
@@ -244,10 +344,39 @@ export default function UserProfilePage() {
                                 </div>
                             )}
 
-                            {/* Media Type Badge */}
-                            <div className="absolute top-2 right-2 bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded backdrop-blur-sm uppercase">
-                                {meme.media_type === "raw" || meme.media_type === "audio" ? "AUDIO" : meme.media_type}
                             </div>
+
+                            {/* THREE DOT MENU */}
+                            {canDelete(meme) && (
+                                <div className="absolute top-2 left-2 z-20">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setOpenMenuId(openMenuId === meme.id ? null : meme.id);
+                                        }}
+                                        className="w-8 h-8 bg-black/60 text-white rounded-full flex items-center justify-center hover:bg-black/80 transition-colors backdrop-blur-sm"
+                                    >
+                                        <MoreVertical size={16} />
+                                    </button>
+
+                                    {openMenuId === meme.id && (
+                                        <div className="absolute top-10 left-0 bg-white dark:bg-[#222] rounded-lg shadow-xl border border-gray-100 dark:border-gray-700 py-1 w-32 overflow-hidden animate-in fade-in zoom-in duration-200">
+                                            <button
+                                                onClick={(e) => openEditModal(e, meme)}
+                                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-[#333] flex items-center gap-2 dark:text-gray-200"
+                                            >
+                                                <Edit size={14} /> Edit
+                                            </button>
+                                            <button
+                                                onClick={(e) => handleDelete(e, meme)}
+                                                className="w-full text-left px-4 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 flex items-center gap-2"
+                                            >
+                                                <Trash2 size={14} /> Delete
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         <div className="p-4">
@@ -305,99 +434,185 @@ export default function UserProfilePage() {
                         </div>
                     </div>
                 ))}
-            </div>
+        </div>
 
-            {/* MEME MODAL */}
-            {selectedMeme && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
-                    <div className="relative w-full max-w-6xl h-full max-h-[90vh] bg-white dark:bg-[#0a0a0a] rounded-2xl overflow-hidden shadow-2xl">
-                        <button
-                            onClick={() => setSelectedMeme(null)}
-                            className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-white/20 transition-colors"
-                        >
-                            <X size={24} />
-                        </button>
+            {/* MEME MODAL */ }
+    {
+        selectedMeme && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
+                <div className="relative w-full max-w-6xl h-full max-h-[90vh] bg-white dark:bg-[#0a0a0a] rounded-2xl overflow-hidden shadow-2xl">
+                    <button
+                        onClick={() => setSelectedMeme(null)}
+                        className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-white/20 transition-colors"
+                    >
+                        <X size={24} />
+                    </button>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 h-full">
-                            {/* Media Section */}
-                            <div className="md:col-span-2 bg-black flex items-center justify-center h-full">
-                                {selectedMeme.media_type === "video" || selectedMeme.file_url.endsWith(".mp4") ? (
-                                    <video src={selectedMeme.file_url} controls autoPlay className="max-w-full max-h-full" />
-                                ) : selectedMeme.media_type === "raw" || selectedMeme.media_type === "audio" || selectedMeme.file_url.endsWith(".mp3") ? (
-                                    <div className="text-center p-8">
-                                        {selectedMeme.thumbnail_url && (
-                                            <img src={selectedMeme.thumbnail_url} className="max-w-md max-h-64 mx-auto mb-6 rounded-lg" alt={selectedMeme.title} />
-                                        )}
-                                        <Music className="w-24 h-24 text-yellow-400 mx-auto mb-6 animate-pulse" />
-                                        <audio src={selectedMeme.file_url} controls className="w-full min-w-[300px]" autoPlay />
-                                    </div>
-                                ) : (
-                                    <img src={selectedMeme.file_url} className="max-w-full max-h-full object-contain" />
-                                )}
+                    <div className="grid grid-cols-1 md:grid-cols-3 h-full">
+                        {/* Media Section */}
+                        <div className="md:col-span-2 bg-black flex items-center justify-center h-full">
+                            {selectedMeme.media_type === "video" || selectedMeme.file_url.endsWith(".mp4") ? (
+                                <video src={selectedMeme.file_url} controls autoPlay className="max-w-full max-h-full" />
+                            ) : selectedMeme.media_type === "raw" || selectedMeme.media_type === "audio" || selectedMeme.file_url.endsWith(".mp3") ? (
+                                <div className="text-center p-8">
+                                    {selectedMeme.thumbnail_url && (
+                                        <img src={selectedMeme.thumbnail_url} className="max-w-md max-h-64 mx-auto mb-6 rounded-lg" alt={selectedMeme.title} />
+                                    )}
+                                    <Music className="w-24 h-24 text-yellow-400 mx-auto mb-6 animate-pulse" />
+                                    <audio src={selectedMeme.file_url} controls className="w-full min-w-[300px]" autoPlay />
+                                </div>
+                            ) : (
+                                <img src={selectedMeme.file_url} className="max-w-full max-h-full object-contain" />
+                            )}
+                        </div>
+
+                        {/* Info Section */}
+                        <div className="bg-white dark:bg-[#111] p-6 flex flex-col h-full overflow-y-auto border-l border-gray-800">
+                            <h2 className="text-2xl font-black text-black dark:text-white mb-2">{selectedMeme.title}</h2>
+
+                            <Link
+                                href={`/user/${selectedMeme.uploader_id}`}
+                                className="flex items-center gap-2 mb-6 hover:opacity-70 transition-opacity w-fit"
+                            >
+                                <img src={selectedMeme.uploader_pic || "https://ui-avatars.com/api/?name=User"} className="w-8 h-8 rounded-full" />
+                                <div>
+                                    <p className="text-sm font-bold text-black dark:text-white hover:text-yellow-500 transition-colors">{selectedMeme.uploader_name}</p>
+                                    <p className="text-xs text-gray-500">{timeAgo(selectedMeme.createdAt)}</p>
+                                </div>
+                            </Link>
+
+                            <div className="flex gap-2 mb-8">
+                                <span className="px-3 py-1 rounded-full bg-gray-100 dark:bg-[#222] text-xs font-bold text-gray-500 uppercase">
+                                    {selectedMeme.category}
+                                </span>
+                                <span className="px-3 py-1 rounded-full bg-gray-100 dark:bg-[#222] text-xs font-bold text-gray-500 uppercase">
+                                    {selectedMeme.language}
+                                </span>
                             </div>
 
-                            {/* Info Section */}
-                            <div className="bg-white dark:bg-[#111] p-6 flex flex-col h-full overflow-y-auto border-l border-gray-800">
-                                <h2 className="text-2xl font-black text-black dark:text-white mb-2">{selectedMeme.title}</h2>
-
-                                <Link
-                                    href={`/user/${selectedMeme.uploader_id}`}
-                                    className="flex items-center gap-2 mb-6 hover:opacity-70 transition-opacity w-fit"
-                                >
-                                    <img src={selectedMeme.uploader_pic || "https://ui-avatars.com/api/?name=User"} className="w-8 h-8 rounded-full" />
-                                    <div>
-                                        <p className="text-sm font-bold text-black dark:text-white hover:text-yellow-500 transition-colors">{selectedMeme.uploader_name}</p>
-                                        <p className="text-xs text-gray-500">{timeAgo(selectedMeme.createdAt)}</p>
-                                    </div>
-                                </Link>
-
-                                <div className="flex gap-2 mb-8">
-                                    <span className="px-3 py-1 rounded-full bg-gray-100 dark:bg-[#222] text-xs font-bold text-gray-500 uppercase">
-                                        {selectedMeme.category}
-                                    </span>
-                                    <span className="px-3 py-1 rounded-full bg-gray-100 dark:bg-[#222] text-xs font-bold text-gray-500 uppercase">
-                                        {selectedMeme.language}
-                                    </span>
+                            {selectedMeme.credit && (
+                                <div className="mb-6 p-4 bg-gray-50 dark:bg-[#1a1a1a] rounded-xl border border-gray-100 dark:border-gray-800">
+                                    <p className="text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Credit / Source</p>
+                                    <p className="text-sm text-gray-700 dark:text-gray-300 break-words">{selectedMeme.credit}</p>
                                 </div>
+                            )}
 
-                                {selectedMeme.credit && (
-                                    <div className="mb-6 p-4 bg-gray-50 dark:bg-[#1a1a1a] rounded-xl border border-gray-100 dark:border-gray-800">
-                                        <p className="text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Credit / Source</p>
-                                        <p className="text-sm text-gray-700 dark:text-gray-300 break-words">{selectedMeme.credit}</p>
-                                    </div>
-                                )}
+                            <div className="mt-auto space-y-3">
+                                <button
+                                    onClick={(e) => handleReaction(e, selectedMeme)}
+                                    className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${selectedMeme.reactedBy?.includes(user?.uid)
+                                        ? "bg-yellow-400 text-black"
+                                        : "bg-gray-100 dark:bg-[#222] text-black dark:text-white hover:bg-gray-200 dark:hover:bg-[#333]"
+                                        }`}
+                                >
+                                    {selectedMeme.reactions?.haha || 0} 😂
+                                </button>
 
-                                <div className="mt-auto space-y-3">
-                                    <button
-                                        onClick={(e) => handleReaction(e, selectedMeme)}
-                                        className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${selectedMeme.reactedBy?.includes(user?.uid)
-                                            ? "bg-yellow-400 text-black"
-                                            : "bg-gray-100 dark:bg-[#222] text-black dark:text-white hover:bg-gray-200 dark:hover:bg-[#333]"
-                                            }`}
-                                    >
-                                        {selectedMeme.reactions?.haha || 0} 😂
-                                    </button>
+                                <button
+                                    onClick={(e) => handleDownload(e, selectedMeme)}
+                                    className="w-full flex items-center justify-center gap-2 bg-yellow-400 text-black px-6 py-3 rounded-xl font-bold hover:bg-yellow-500 transition-colors shadow-lg"
+                                >
+                                    <Download size={20} />
+                                    Download
+                                </button>
 
-                                    <button
-                                        onClick={(e) => handleDownload(e, selectedMeme)}
-                                        className="w-full flex items-center justify-center gap-2 bg-yellow-400 text-black px-6 py-3 rounded-xl font-bold hover:bg-yellow-500 transition-colors shadow-lg"
-                                    >
-                                        <Download size={20} />
-                                        Download
-                                    </button>
-
-                                    <div className="flex gap-2 text-xs text-gray-500 justify-center pt-3">
-                                        <span className="flex items-center gap-1"><Eye size={14} /> {selectedMeme.views || 0} views</span>
-                                        <span>•</span>
-                                        <span className="flex items-center gap-1"><Download size={14} /> {selectedMeme.downloads || 0} downloads</span>
-                                    </div>
+                                <div className="flex gap-2 text-xs text-gray-500 justify-center pt-3">
+                                    <span className="flex items-center gap-1"><Eye size={14} /> {selectedMeme.views || 0} views</span>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-1"><Download size={14} /> {selectedMeme.downloads || 0} downloads</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            )}
-        </div>
+            </div>
+        )
+    }
+    {/* EDIT MEME MODAL */ }
+    {
+        editingMeme && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                <div className="bg-white dark:bg-[#1a1a1a] w-full max-w-lg rounded-2xl p-6 relative animate-in fade-in zoom-in duration-200 border border-gray-200 dark:border-gray-800">
+                    <button
+                        onClick={() => setEditingMeme(null)}
+                        className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-[#333] rounded-full transition-colors"
+                    >
+                        <X size={20} className="dark:text-white" />
+                    </button>
+
+                    <h2 className="text-2xl font-bold mb-6 dark:text-white">Edit Meme</h2>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium mb-1 dark:text-gray-300">Title</label>
+                            <input
+                                type="text"
+                                value={editForm.title}
+                                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                                className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-[#222] border border-gray-200 dark:border-gray-700 outline-none focus:border-yellow-400 dark:text-white"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-1 dark:text-gray-300">Category</label>
+                            <select
+                                value={editForm.category}
+                                onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                                className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-[#222] border border-gray-200 dark:border-gray-700 outline-none focus:border-yellow-400 dark:text-white"
+                            >
+                                <option value="reaction">Reaction</option>
+                                <option value="trending">Trending</option>
+                                <option value="animal">Animal</option>
+                                <option value="work">Work</option>
+                                <option value="sports">Sports</option>
+                                <option value="coding">Coding</option>
+                                <option value="crypto">Crypto</option>
+                                <option value="gaming">Gaming</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-1 dark:text-gray-300">Tags (comma separated)</label>
+                            <input
+                                type="text"
+                                value={editForm.tags}
+                                onChange={(e) => setEditForm({ ...editForm, tags: e.target.value })}
+                                className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-[#222] border border-gray-200 dark:border-gray-700 outline-none focus:border-yellow-400 dark:text-white"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-1 dark:text-gray-300">Custom Thumbnail (Optional)</label>
+                            <div className="flex items-center gap-4">
+                                {(thumbnailPreview || editingMeme.thumbnail_url) && (
+                                    <img
+                                        src={thumbnailPreview || editingMeme.thumbnail_url}
+                                        className="w-16 h-16 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
+                                    />
+                                )}
+                                <label className="flex-1 cursor-pointer">
+                                    <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gray-50 dark:bg-[#222] border border-dashed border-gray-300 dark:border-gray-700 hover:border-yellow-400 transition-colors">
+                                        <Upload size={18} className="text-gray-400" />
+                                        <span className="text-sm text-gray-500">Change Thumbnail</span>
+                                    </div>
+                                    <input type="file" accept="image/*" onChange={handleThumbnailChange} className="hidden" />
+                                </label>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={saveEdits}
+                            disabled={saving}
+                            className="w-full py-4 bg-yellow-400 text-black font-bold rounded-xl hover:bg-yellow-500 transition-colors disabled:opacity-50 mt-4"
+                        >
+                            {saving ? "Saving Changes..." : "Save Changes"}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+        </div >
     );
 }
 
