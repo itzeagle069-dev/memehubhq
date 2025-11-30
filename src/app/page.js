@@ -1317,12 +1317,12 @@ function HomeContent() {
 
             </div>
             );
-    }
+}
 
             export default function Home() {
-        return (
+    return (
             <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin"></div></div>}>
                 <HomeContent />
             </Suspense>
             );
-    }
+}
