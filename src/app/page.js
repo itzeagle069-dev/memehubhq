@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useDownloadList } from "@/context/DownloadContext";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
+import AdUnit from "@/components/AdUnit";
 
 // 🔴 ADMIN UIDS
 const ADMIN_IDS = ["VZCDwbnsLxcLdEcjabk8wK0pEv33"];
@@ -782,6 +783,7 @@ function HomeContent() {
                 )}
 
                 {/* 2. CATEGORY TABS */}
+                <AdUnit type="banner" />
                 <div className="flex flex-col gap-4 mb-8">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                         <h2 className="text-2xl font-bold dark:text-white flex items-center gap-2">
@@ -992,6 +994,9 @@ function HomeContent() {
                         ))}
                     </div>
                 )}
+
+                {/* NATIVE AD */}
+                <AdUnit type="native" />
 
                 {/* LOAD MORE BUTTON */}
                 {!loading && memes.length > 0 && hasMore && (
