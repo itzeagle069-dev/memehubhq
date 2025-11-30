@@ -1,0 +1,13 @@
+# Allow all search engines to crawl everything
+User-agent: *
+Allow: /
+
+# Disallow admin and private pages
+Disallow: /admin
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://memehubhq.vercel.app/sitemap.xml
+
+# Crawl delay (optional - helps prevent server overload)
+Crawl-delay: 1
