@@ -66,8 +66,9 @@ function HomeContent() {
     const [downloadUnlocked, setDownloadUnlocked] = useState(false);
     const [downloadTimer, setDownloadTimer] = useState(3);
     const [showAdInterstitial, setShowAdInterstitial] = useState(false);
-    const [interstitialTimer, setInterstitialTimer] = useState(15);
+    const [interstitialTimer, setInterstitialTimer] = useState(5); // Default 5 sec for card downloads
     const [pendingDownload, setPendingDownload] = useState(null);
+    const [downloadSource, setDownloadSource] = useState(""); // "preview", "card", "downloadAll"
 
     // Pagination states
     const [lastVisible, setLastVisible] = useState(null);
@@ -555,7 +556,7 @@ function HomeContent() {
     };
 
     // Wrapper to handle Ad Interstitial
-    const handleDownload = (e, memeId, url, filename) => {
+    const handleDownload = (e, memeId, url, filename, source = "card") => {
         e.stopPropagation();
 
         // If in modal and locked, do nothing
@@ -564,10 +565,17 @@ function HomeContent() {
             return;
         }
 
-        // Trigger Interstitial
+        // Preview modal download - NO interstitial, direct download
+        if (source === "preview") {
+            handleRealDownload(e, memeId, url, filename);
+            return;
+        }
+
+        // Card download - 5 second interstitial
+        setDownloadSource(source);
         setPendingDownload({ id: memeId, url, title: filename });
         setShowAdInterstitial(true);
-        setInterstitialTimer(15);
+        setInterstitialTimer(5);
     };
 
     // Handle Download (Real)
@@ -1055,7 +1063,7 @@ function HomeContent() {
                                     </div>
                                 </div>
                                 {(idx + 1) % 5 === 0 && (
-                                    <div className="col-span-1 sm:col-span-2 md:col-span-3">
+                                    <div className="bg-gray-100 dark:bg-[#1a1a1a] rounded-xl overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center min-h-[320px]">
                                         <AdUnit type="native" />
                                     </div>
                                 )}
@@ -1152,7 +1160,7 @@ function HomeContent() {
                                     </button>
 
                                     <button
-                                        onClick={(e) => handleDownload(e, selectedMeme.id, selectedMeme.file_url, selectedMeme.title)}
+                                        onClick={(e) => handleDownload(e, selectedMeme.id, selectedMeme.file_url, selectedMeme.title, "preview")}
                                         disabled={!downloadUnlocked}
                                         className={`w-full py-3 rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2 shadow-lg ${!downloadUnlocked ? "bg-gray-200 dark:bg-gray-800 cursor-not-allowed text-gray-500" : "bg-yellow-400 text-black hover:bg-yellow-500"}`}
                                     >
