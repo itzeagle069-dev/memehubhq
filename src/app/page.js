@@ -219,7 +219,7 @@ function HomeContent() {
 
                 if (sortBy === "oldest") { sortDir = "asc"; }
                 else if (sortBy === "popular") { sortField = "views"; sortDir = "desc"; }
-                else if (sortBy === "a_z") { sortField = "title_lowercase"; sortDir = "asc"; }
+                else if (sortBy === "a_z") { sortField = "title"; sortDir = "asc"; }
                 else if (sortBy === "downloads") { sortField = "downloads"; sortDir = "desc"; }
                 else if (sortBy === "reacted") { sortField = "reactions.haha"; sortDir = "desc"; }
 
@@ -336,7 +336,7 @@ function HomeContent() {
 
             if (sortBy === "oldest") { sortDir = "asc"; }
             else if (sortBy === "popular") { sortField = "views"; sortDir = "desc"; }
-            else if (sortBy === "a_z") { sortField = "title_lowercase"; sortDir = "asc"; }
+            else if (sortBy === "a_z") { sortField = "title"; sortDir = "asc"; }
             else if (sortBy === "downloads") { sortField = "downloads"; sortDir = "desc"; }
             else if (sortBy === "reacted") { sortField = "reactions.haha"; sortDir = "desc"; }
 
