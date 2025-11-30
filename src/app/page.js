@@ -62,6 +62,13 @@ function HomeContent() {
     const [sortBy, setSortBy] = useState("newest"); // newest, oldest, popular, a_z, downloads, reacted
     const [selectedMeme, setSelectedMeme] = useState(null);
 
+    // Ad & Download Logic State
+    const [downloadUnlocked, setDownloadUnlocked] = useState(false);
+    const [downloadTimer, setDownloadTimer] = useState(3);
+    const [showAdInterstitial, setShowAdInterstitial] = useState(false);
+    const [interstitialTimer, setInterstitialTimer] = useState(15);
+    const [pendingDownload, setPendingDownload] = useState(null);
+
     // Pagination states
     const [lastVisible, setLastVisible] = useState(null);
     const [hasMore, setHasMore] = useState(true);
@@ -196,6 +203,46 @@ function HomeContent() {
     const paramLanguage = searchParams.get('language');
     const paramDate = searchParams.get('date');
     const paramType = searchParams.get('type');
+
+    // 🟢 AD & DOWNLOAD LOGIC EFFECTS
+
+    // Unlock download button timer
+    useEffect(() => {
+        let interval;
+        if (selectedMeme && !downloadUnlocked && downloadTimer > 0) {
+            interval = setInterval(() => {
+                setDownloadTimer((prev) => prev - 1);
+            }, 1000);
+        } else if (downloadTimer === 0) {
+            setDownloadUnlocked(true);
+        }
+        return () => clearInterval(interval);
+    }, [selectedMeme, downloadUnlocked, downloadTimer]);
+
+    // Reset timer when modal opens
+    useEffect(() => {
+        if (selectedMeme) {
+            setDownloadUnlocked(false);
+            setDownloadTimer(3);
+        }
+    }, [selectedMeme]);
+
+    // Interstitial timer
+    useEffect(() => {
+        let interval;
+        if (showAdInterstitial && interstitialTimer > 0) {
+            interval = setInterval(() => {
+                setInterstitialTimer((prev) => prev - 1);
+            }, 1000);
+        } else if (interstitialTimer === 0 && showAdInterstitial && pendingDownload) {
+            // Timer finished, trigger download
+            handleRealDownload({ stopPropagation: () => { } }, pendingDownload.id, pendingDownload.url, pendingDownload.title);
+            setShowAdInterstitial(false);
+            setPendingDownload(null);
+            setInterstitialTimer(15); // Reset for next time
+        }
+        return () => clearInterval(interval);
+    }, [showAdInterstitial, interstitialTimer, pendingDownload]);
 
     // Sync URL param with activeCategory state
     useEffect(() => {
@@ -507,8 +554,24 @@ function HomeContent() {
         }
     };
 
-    // Handle Download
-    const handleDownload = async (e, memeId, url, filename) => {
+    // Wrapper to handle Ad Interstitial
+    const handleDownload = (e, memeId, url, filename) => {
+        e.stopPropagation();
+
+        // If in modal and locked, do nothing
+        if (selectedMeme && !downloadUnlocked) {
+            toast("Please wait for download to unlock...", { icon: "⏳" });
+            return;
+        }
+
+        // Trigger Interstitial
+        setPendingDownload({ id: memeId, url, title: filename });
+        setShowAdInterstitial(true);
+        setInterstitialTimer(15);
+    };
+
+    // Handle Download (Real)
+    const handleRealDownload = async (e, memeId, url, filename) => {
         e.stopPropagation();
 
         try {
@@ -991,7 +1054,7 @@ function HomeContent() {
                                         </div>
                                     </div>
                                 </div>
-                                {(idx + 1) % 6 === 0 && (
+                                {(idx + 1) % 5 === 0 && (
                                     <div className="col-span-1 sm:col-span-2 md:col-span-3">
                                         <AdUnit type="native" />
                                     </div>
@@ -1090,9 +1153,19 @@ function HomeContent() {
 
                                     <button
                                         onClick={(e) => handleDownload(e, selectedMeme.id, selectedMeme.file_url, selectedMeme.title)}
-                                        className="w-full py-3 rounded-xl bg-yellow-400 text-black font-bold text-lg hover:bg-yellow-500 transition-colors flex items-center justify-center gap-2 shadow-lg"
+                                        disabled={!downloadUnlocked}
+                                        className={`w-full py-3 rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2 shadow-lg ${!downloadUnlocked ? "bg-gray-200 dark:bg-gray-800 cursor-not-allowed text-gray-500" : "bg-yellow-400 text-black hover:bg-yellow-500"}`}
                                     >
-                                        <Download /> Download
+                                        {!downloadUnlocked ? (
+                                            <>
+                                                <div className="w-5 h-5 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />
+                                                Wait {downloadTimer}s...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Download /> Download
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             </div>
@@ -1197,6 +1270,38 @@ function HomeContent() {
                                 <button onClick={saveEdits} disabled={saving} className="px-5 py-2.5 rounded-xl font-bold bg-yellow-400 text-black hover:bg-yellow-500 disabled:opacity-50">
                                     {saving ? "Saving..." : "Save Changes"}
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* AD INTERSTITIAL MODAL */}
+                {showAdInterstitial && (
+                    <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/95 backdrop-blur-md p-4">
+                        <div className="w-full max-w-lg bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 text-center border border-gray-200 dark:border-gray-800 shadow-2xl">
+                            <div className="mb-6">
+                                <div className="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                                    <Download size={32} className="text-black" />
+                                </div>
+                                <h3 className="text-2xl font-black mb-2">Preparing Download...</h3>
+                                <p className="text-gray-500">Please wait while we generate your secure download link.</p>
+                            </div>
+
+                            {/* Ad Container */}
+                            <div className="min-h-[250px] bg-gray-50 dark:bg-black rounded-xl mb-6 flex items-center justify-center border-2 border-dashed border-gray-200 dark:border-gray-800 overflow-hidden">
+                                <AdUnit type="native" />
+                            </div>
+
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
+                                    <div
+                                        className="h-full bg-yellow-400 transition-all duration-1000 ease-linear"
+                                        style={{ width: `${((15 - interstitialTimer) / 15) * 100}%` }}
+                                    />
+                                </div>
+                                <p className="text-sm font-bold text-gray-400">
+                                    Starting in {interstitialTimer} seconds...
+                                </p>
                             </div>
                         </div>
                     </div>
