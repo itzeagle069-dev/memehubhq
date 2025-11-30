@@ -104,7 +104,7 @@ export default function RootLayout({ children }) {
       <head>
         <JsonLdSchema />
       </head>
-      <body className={`${inter.className} antialiased bg-white dark:bg-[#050505] text-black dark:text-white transition-colors duration-300`}>
+      <body suppressHydrationWarning={true} className={`${inter.className} antialiased bg-white dark:bg-[#050505] text-black dark:text-white transition-colors duration-300`}>
         <AuthContextProvider>
           <DownloadProvider>
             <ImageProtection />
