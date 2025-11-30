@@ -91,6 +91,11 @@ function HomeContent() {
     const [selectedMemes, setSelectedMemes] = useState([]);
     const [isSelectionMode, setIsSelectionMode] = useState(false);
 
+    // Pagination states
+    const [lastVisible, setLastVisible] = useState(null);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+
     // Ref for infinite scroll observer
     const loadMoreRef = useRef(null);
 
