@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 
@@ -11,6 +11,7 @@ import { useDownloadList } from "@/context/DownloadContext";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import AdUnit from "@/components/AdUnit";
+
 
 // 🔴 ADMIN UIDS
 const ADMIN_IDS = ["VZCDwbnsLxcLdEcjabk8wK0pEv33"];
@@ -69,11 +70,6 @@ function HomeContent() {
     const [interstitialTimer, setInterstitialTimer] = useState(5); // Default 5 sec for card downloads
     const [pendingDownload, setPendingDownload] = useState(null);
     const [downloadSource, setDownloadSource] = useState(""); // "preview", "card", "downloadAll"
-
-    // Pagination states
-    const [lastVisible, setLastVisible] = useState(null);
-    const [hasMore, setHasMore] = useState(true);
-    const [loadingMore, setLoadingMore] = useState(false);
 
     // Edit & Menu State
     const [openMenuId, setOpenMenuId] = useState(null);
@@ -244,6 +240,8 @@ function HomeContent() {
         }
         return () => clearInterval(interval);
     }, [showAdInterstitial, interstitialTimer, pendingDownload]);
+
+
 
     // Sync URL param with activeCategory state
     useEffect(() => {
@@ -760,10 +758,17 @@ function HomeContent() {
         }
     };
 
-    // Generate display items WITHOUT ads (disabled for now)
+    // Generate display items with ads
     const getDisplayItems = (memes) => {
-        // Return memes only - NO ADS
-        return memes.map(meme => ({ type: "meme", data: meme }));
+        const items = [];
+        memes.forEach((meme, index) => {
+            items.push({ type: "meme", data: meme });
+            // Insert ad after every 5th meme
+            if ((index + 1) % 5 === 0) {
+                items.push({ type: "ad", id: `ad-${index}` });
+            }
+        });
+        return items;
     };
 
     const displayItems = getDisplayItems(memes);
@@ -904,170 +909,172 @@ function HomeContent() {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                         {displayItems.map((item, idx) => (
-                            <Fragment key={item.data.id}>
-                                <div
-                                    onClick={() => openMeme(item.data)}
-                                    className="group relative rounded-2xl bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-[#252525] overflow-hidden hover:shadow-2xl hover:shadow-yellow-400/10 dark:hover:border-yellow-400/30 transition-all duration-300 flex flex-col cursor-pointer"
-                                >
-                                    {/* MEDIA DISPLAY */}
-                                    <div className="aspect-[4/3] bg-black flex items-center justify-center relative overflow-hidden">
-                                        {item.data.thumbnail_url ? (
-                                            <img src={item.data.thumbnail_url} alt={item.data.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                        ) : item.data.media_type === "video" || item.data.file_url.endsWith(".mp4") ? (
-                                            <video src={item.data.file_url} className="w-full h-full object-cover" />
-                                        ) : item.data.media_type === "raw" || item.data.media_type === "audio" ? (
-                                            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-900 to-black text-white p-4">
-                                                <Music className="w-16 h-16 mb-4 text-yellow-400" />
-                                            </div>
-                                        ) : (
-                                            <img src={item.data.file_url} alt={item.data.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                        )}
-
-                                        {(item.data.media_type === "video" || item.data.media_type === "raw" || item.data.media_type === "audio") && (
-                                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
-                                                <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white group-hover:scale-110 transition-transform">
-                                                    <Play fill="currentColor" className="ml-1 w-5 h-5" />
+                            item.type === 'ad' ? (
+                                <div key={item.id} className="bg-gray-100 dark:bg-[#1a1a1a] rounded-xl overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center min-h-[320px]">
+                                    <AdUnit type="native" />
+                                </div>
+                            ) : (
+                                <Fragment key={item.data.id}>
+                                    <div
+                                        onClick={() => openMeme(item.data)}
+                                        className="group relative rounded-2xl bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-[#252525] overflow-hidden hover:shadow-2xl hover:shadow-yellow-400/10 dark:hover:border-yellow-400/30 transition-all duration-300 flex flex-col cursor-pointer"
+                                    >
+                                        {/* MEDIA DISPLAY */}
+                                        <div className="aspect-[4/3] bg-black flex items-center justify-center relative overflow-hidden">
+                                            {item.data.thumbnail_url ? (
+                                                <img src={item.data.thumbnail_url} alt={item.data.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                            ) : item.data.media_type === "video" || item.data.file_url.endsWith(".mp4") ? (
+                                                <video src={item.data.file_url} className="w-full h-full object-cover" />
+                                            ) : item.data.media_type === "raw" || item.data.media_type === "audio" ? (
+                                                <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-900 to-black text-white p-4">
+                                                    <Music className="w-16 h-16 mb-4 text-yellow-400" />
                                                 </div>
-                                            </div>
-                                        )}
+                                            ) : (
+                                                <img src={item.data.file_url} alt={item.data.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                            )}
 
-                                        <div className="absolute top-2 right-2 bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded backdrop-blur-sm uppercase">
-                                            {item.data.media_type === "raw" || item.data.media_type === "audio" ? "AUDIO" : item.data.media_type}
-                                        </div>
-
-                                        {/* Admin Multi-Select Checkbox */}
-                                        {isAdmin && isSelectionMode && (
-                                            <div
-                                                className="absolute top-2 left-2 z-10"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    toggleMemeSelection(item.data.id);
-                                                }}
-                                            >
-                                                <div className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-all ${selectedMemes.includes(item.data.id)
-                                                    ? "bg-yellow-400 border-yellow-400"
-                                                    : "bg-white/20 border-white backdrop-blur-sm hover:bg-white/30"
-                                                    }`}>
-                                                    {selectedMemes.includes(item.data.id) && (
-                                                        <Check size={18} className="text-black font-bold" />
-                                                    )}
+                                            {(item.data.media_type === "video" || item.data.media_type === "raw" || item.data.media_type === "audio") && (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
+                                                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                                                        <Play fill="currentColor" className="ml-1 w-5 h-5" />
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )}
-                                    </div>
+                                            )}
 
-                                    {/* CARD FOOTER */}
-                                    <div className="p-4 flex flex-col flex-1">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h3 className="font-bold text-lg truncate text-black dark:text-white flex-1 mr-2">{item.data.title}</h3>
-                                            <span className="text-[10px] text-gray-400 whitespace-nowrap mt-1">{timeAgo(item.data.createdAt)}</span>
-                                        </div>
-
-                                        <Link
-                                            href={`/user/${item.data.uploader_id}`}
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="flex items-center gap-2 mb-4 hover:opacity-70 transition-opacity w-fit"
-                                        >
-                                            <img src={item.data.uploader_pic || "https://ui-avatars.com/api/?name=User"} alt={item.data.uploader_name || "User"} className="w-5 h-5 rounded-full" />
-                                            <span className="text-xs text-gray-500 dark:text-gray-400 truncate hover:text-yellow-500 transition-colors">{item.data.uploader_name}</span>
-                                        </Link>
-
-                                        <div className="mt-auto flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-800">
-                                            <div className="flex items-center gap-3 text-xs text-gray-500 font-medium">
-                                                <span className="flex items-center gap-1"><Eye size={14} /> {item.data.views || 0}</span>
-                                                <span className="flex items-center gap-1"><Download size={14} /> {item.data.downloads || 0}</span>
+                                            <div className="absolute top-2 right-2 bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded backdrop-blur-sm uppercase">
+                                                {item.data.media_type === "raw" || item.data.media_type === "audio" ? "AUDIO" : item.data.media_type}
                                             </div>
 
-                                            <div className="flex items-center gap-2">
-                                                {/* Add to Download List */}
-                                                <button
+                                            {/* Admin Multi-Select Checkbox */}
+                                            {isAdmin && isSelectionMode && (
+                                                <div
+                                                    className="absolute top-2 left-2 z-10"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        if (isInDownloadList(item.data.id)) {
-                                                            removeFromDownloadList(item.data.id);
-                                                        } else {
-                                                            addToDownloadList(item.data);
-                                                        }
+                                                        toggleMemeSelection(item.data.id);
                                                     }}
-                                                    className={`w-6 h-6 flex items-center justify-center rounded-md border-2 transition-all ${isInDownloadList(item.data.id)
-                                                        ? "bg-black border-black text-white dark:bg-white dark:border-white dark:text-black"
-                                                        : "bg-transparent border-gray-300 dark:border-gray-600 hover:border-black dark:hover:border-white"
-                                                        }`}
-                                                    title={isInDownloadList(item.data.id) ? "Remove from download list" : "Add to download list"}
                                                 >
-                                                    {isInDownloadList(item.data.id) && <Download size={12} strokeWidth={3} />}
-                                                </button>
-
-                                                {/* Menu */}
-                                                {(canDelete(item.data) || ADMIN_IDS.includes(user?.uid)) && (
-                                                    <div className="relative">
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setOpenMenuId(openMenuId === item.data.id ? null : item.data.id);
-                                                            }}
-                                                            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-colors"
-                                                        >
-                                                            <MoreVertical size={16} />
-                                                        </button>
-                                                        {openMenuId === item.data.id && (
-                                                            <div className="absolute right-0 bottom-full mb-2 w-32 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-20 overflow-hidden">
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        openEditModal(item.data);
-                                                                        setOpenMenuId(null);
-                                                                    }}
-                                                                    className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-left text-sm text-black dark:text-white"
-                                                                >
-                                                                    <Edit2 size={14} /> Edit
-                                                                </button>
-                                                                {canDelete(item.data) && (
-                                                                    <button
-                                                                        onClick={(e) => {
-                                                                            handleDelete(e, item.data);
-                                                                            setOpenMenuId(null);
-                                                                        }}
-                                                                        className="w-full flex items-center gap-2 px-4 py-2 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 text-left text-sm"
-                                                                    >
-                                                                        <Trash2 size={14} /> Delete
-                                                                    </button>
-                                                                )}
-                                                            </div>
+                                                    <div className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-all ${selectedMemes.includes(item.data.id)
+                                                        ? "bg-yellow-400 border-yellow-400"
+                                                        : "bg-white/20 border-white backdrop-blur-sm hover:bg-white/30"
+                                                        }`}>
+                                                        {selectedMemes.includes(item.data.id) && (
+                                                            <Check size={18} className="text-black font-bold" />
                                                         )}
                                                     </div>
-                                                )}
+                                                </div>
+                                            )}
+                                        </div>
 
-                                                {/* Reaction */}
-                                                <button
-                                                    onClick={(e) => handleReaction(e, item.data)}
-                                                    className={`flex items-center gap-1 px-3 py-1.5 rounded-full transition-colors text-xs font-bold ${item.data.reactedBy?.includes(user?.uid)
-                                                        ? "bg-yellow-400 text-black"
-                                                        : "bg-yellow-50 dark:bg-yellow-400/10 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-400/20"
-                                                        }`}
-                                                >
-                                                    {item.data.reactions?.haha || 0} 😂
-                                                </button>
+                                        {/* CARD FOOTER */}
+                                        <div className="p-4 flex flex-col flex-1">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h3 className="font-bold text-lg truncate text-black dark:text-white flex-1 mr-2">{item.data.title}</h3>
+                                                <span className="text-[10px] text-gray-400 whitespace-nowrap mt-1">{timeAgo(item.data.createdAt)}</span>
+                                            </div>
 
-                                                {/* Download Button */}
-                                                <button
-                                                    onClick={(e) => handleDownload(e, item.data.id, item.data.file_url, item.data.title)}
-                                                    className="px-3 py-1.5 rounded-lg bg-yellow-400 text-black text-xs font-bold hover:bg-yellow-500 transition-colors flex items-center gap-1"
-                                                    title="Download now"
-                                                >
-                                                    <Download size={12} />
-                                                    Download
-                                                </button>
+                                            <Link
+                                                href={`/user/${item.data.uploader_id}`}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="flex items-center gap-2 mb-4 hover:opacity-70 transition-opacity w-fit"
+                                            >
+                                                <img src={item.data.uploader_pic || "https://ui-avatars.com/api/?name=User"} alt={item.data.uploader_name || "User"} className="w-5 h-5 rounded-full" />
+                                                <span className="text-xs text-gray-500 dark:text-gray-400 truncate hover:text-yellow-500 transition-colors">{item.data.uploader_name}</span>
+                                            </Link>
+
+                                            <div className="mt-auto flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-800">
+                                                <div className="flex items-center gap-3 text-xs text-gray-500 font-medium">
+                                                    <span className="flex items-center gap-1"><Eye size={14} /> {item.data.views || 0}</span>
+                                                    <span className="flex items-center gap-1"><Download size={14} /> {item.data.downloads || 0}</span>
+                                                </div>
+
+                                                <div className="flex items-center gap-2">
+                                                    {/* Add to Download List */}
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (isInDownloadList(item.data.id)) {
+                                                                removeFromDownloadList(item.data.id);
+                                                            } else {
+                                                                addToDownloadList(item.data);
+                                                            }
+                                                        }}
+                                                        className={`w-6 h-6 flex items-center justify-center rounded-md border-2 transition-all ${isInDownloadList(item.data.id)
+                                                            ? "bg-black border-black text-white dark:bg-white dark:border-white dark:text-black"
+                                                            : "bg-transparent border-gray-300 dark:border-gray-600 hover:border-black dark:hover:border-white"
+                                                            }`}
+                                                        title={isInDownloadList(item.data.id) ? "Remove from download list" : "Add to download list"}
+                                                    >
+                                                        {isInDownloadList(item.data.id) && <Download size={12} strokeWidth={3} />}
+                                                    </button>
+
+                                                    {/* Menu */}
+                                                    {(canDelete(item.data) || ADMIN_IDS.includes(user?.uid)) && (
+                                                        <div className="relative">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setOpenMenuId(openMenuId === item.data.id ? null : item.data.id);
+                                                                }}
+                                                                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-colors"
+                                                            >
+                                                                <MoreVertical size={16} />
+                                                            </button>
+                                                            {openMenuId === item.data.id && (
+                                                                <div className="absolute right-0 bottom-full mb-2 w-32 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-20 overflow-hidden">
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            openEditModal(item.data);
+                                                                            setOpenMenuId(null);
+                                                                        }}
+                                                                        className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-left text-sm text-black dark:text-white"
+                                                                    >
+                                                                        <Edit2 size={14} /> Edit
+                                                                    </button>
+                                                                    {canDelete(item.data) && (
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                handleDelete(e, item.data);
+                                                                                setOpenMenuId(null);
+                                                                            }}
+                                                                            className="w-full flex items-center gap-2 px-4 py-2 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 text-left text-sm"
+                                                                        >
+                                                                            <Trash2 size={14} /> Delete
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Reaction */}
+                                                    <button
+                                                        onClick={(e) => handleReaction(e, item.data)}
+                                                        className={`flex items-center gap-1 px-3 py-1.5 rounded-full transition-colors text-xs font-bold ${item.data.reactedBy?.includes(user?.uid)
+                                                            ? "bg-yellow-400 text-black"
+                                                            : "bg-yellow-50 dark:bg-yellow-400/10 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-400/20"
+                                                            }`}
+                                                    >
+                                                        {item.data.reactions?.haha || 0} 😂
+                                                    </button>
+
+                                                    {/* Download Button */}
+                                                    <button
+                                                        onClick={(e) => handleDownload(e, item.data.id, item.data.file_url, item.data.title)}
+                                                        className="px-3 py-1.5 rounded-lg bg-yellow-400 text-black text-xs font-bold hover:bg-yellow-500 transition-colors flex items-center gap-1"
+                                                        title="Download now"
+                                                    >
+                                                        <Download size={12} />
+                                                        Download
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                                {(idx + 1) % 5 === 0 && (
-                                    <div className="bg-gray-100 dark:bg-[#1a1a1a] rounded-xl overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center min-h-[320px]">
-                                        <AdUnit type="native" />
-                                    </div>
-                                )}
-                            </Fragment>
+
+                                </Fragment>
+                            )
                         ))}
                     </div>
                 )}
@@ -1143,6 +1150,9 @@ function HomeContent() {
                                 )}
 
                                 {/* Ad in Preview Modal */}
+                                {/* Ad in Preview Modal */}
+
+
                                 {/* Ad in Preview Modal */}
                                 <div className="mb-6">
                                     <AdUnit type="native" />
@@ -1265,6 +1275,7 @@ function HomeContent() {
                                 </div>
 
                                 {/* Thumbnail Upload */}
+                                {/* Thumbnail Upload */}
                                 {(editingMeme.media_type === "audio" || editingMeme.media_type === "video" || editingMeme.media_type === "raw") && (
                                     <div>
                                         <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Change Thumbnail</label>
@@ -1282,6 +1293,8 @@ function HomeContent() {
                         </div>
                     </div>
                 )}
+
+
 
                 {/* AD INTERSTITIAL MODAL */}
                 {showAdInterstitial && (
@@ -1316,13 +1329,14 @@ function HomeContent() {
                 )}
 
             </div>
-            );
+        </div>
+    );
 }
 
-            export default function Home() {
+export default function Home() {
     return (
-            <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin"></div></div>}>
-                <HomeContent />
-            </Suspense>
-            );
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin"></div></div>}>
+            <HomeContent />
+        </Suspense>
+    );
 }
