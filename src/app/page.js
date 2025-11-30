@@ -1158,163 +1158,120 @@ function HomeContent() {
                                     >
                                         {!downloadUnlocked ? (
                                             <>
-                                                <div className="w-5 h-5 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />
-                                                Wait {downloadTimer}s...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Download /> Download
-                                            </>
-                                        )}
-                                    </button>
+                                                <div>
+                                                    <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Category</label>
+                                                    <select value={editForm.category || ""} onChange={(e) => setEditForm({ ...editForm, category: e.target.value })} className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400 mb-2">
+                                                        {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                                    </select>
+
+                                                    {isAdmin && (
+                                                        <>
+                                                            <div className="flex flex-wrap gap-2 mb-2">
+                                                                {categories.map(cat => (
+                                                                    <div key={cat} className="flex items-center gap-1 bg-gray-200 dark:bg-[#333] px-2 py-1 rounded text-xs">
+                                                                        <span className="text-black dark:text-white">{cat}</span>
+                                                                        <button type="button" onClick={() => deleteCategory(cat)} className="text-red-500 hover:text-red-700"><X size={12} /></button>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                <input type="text" placeholder="Add new category..." value={newCategory} onChange={(e) => setNewCategory(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCategory())} className="flex-1 p-2 text-sm rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400" />
+                                                                <button type="button" onClick={addCategory} disabled={isAddingCategory} className="px-3 py-2 bg-yellow-400 text-black rounded-lg font-bold text-sm hover:bg-yellow-500 disabled:opacity-50"><Plus size={14} /></button>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+
+                                                {/* Language */}
+                                                <div>
+                                                    <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Language</label>
+                                                    <select value={editForm.language || ""} onChange={(e) => setEditForm({ ...editForm, language: e.target.value })} className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400 mb-2">
+                                                        {languages.map(lang => <option key={lang} value={lang}>{lang}</option>)}
+                                                    </select>
+
+                                                    {isAdmin && (
+                                                        <>
+                                                            <div className="flex flex-wrap gap-2 mb-2">
+                                                                {languages.map(lang => (
+                                                                    <div key={lang} className="flex items-center gap-1 bg-gray-200 dark:bg-[#333] px-2 py-1 rounded text-xs">
+                                                                        <span className="text-black dark:text-white">{lang}</span>
+                                                                        <button type="button" onClick={() => deleteLanguage(lang)} className="text-red-500 hover:text-red-700"><X size={12} /></button>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                <input type="text" placeholder="Add new language..." value={newLanguage} onChange={(e) => setNewLanguage(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addLanguage())} className="flex-1 p-2 text-sm rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400" />
+                                                                <button type="button" onClick={addLanguage} disabled={isAddingLanguage} className="px-3 py-2 bg-yellow-400 text-black rounded-lg font-bold text-sm hover:bg-yellow-500 disabled:opacity-50"><Plus size={14} /></button>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+
+                                                {/* Credit */}
+                                                <div>
+                                                    <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Credit / Source (Optional)</label>
+                                                    <input type="text" value={editForm.credit || ""} onChange={(e) => setEditForm({ ...editForm, credit: e.target.value })} placeholder="Original creator or source..." className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400" />
+                                                </div>
+
+                                                {/* Thumbnail Upload */}
+                                                {(editingMeme.media_type === "audio" || editingMeme.media_type === "video" || editingMeme.media_type === "raw") && (
+                                                    <div>
+                                                        <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Change Thumbnail</label>
+                                                        <input type="file" accept="image/*" onChange={handleThumbnailChange} className="w-full text-sm text-gray-500" />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                        <div className="p-6 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 sticky bottom-0 bg-white dark:bg-[#1f1f1f]">
+                                            <button onClick={() => setEditingMeme(null)} className="px-5 py-2.5 rounded-xl font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">Cancel</button>
+                                            <button onClick={saveEdits} disabled={saving} className="px-5 py-2.5 rounded-xl font-bold bg-yellow-400 text-black hover:bg-yellow-500 disabled:opacity-50">
+                                                {saving ? "Saving..." : "Save Changes"}
+                                            </button>
+                                        </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
                 )}
 
-                {/* EDIT MODAL */}
-                {editingMeme && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                        <div className="bg-white dark:bg-[#1f1f1f] w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
-                            <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center sticky top-0 bg-white dark:bg-[#1f1f1f] z-10">
-                                <h3 className="text-xl font-black">Edit Meme</h3>
-                                <button onClick={() => setEditingMeme(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"><X size={20} /></button>
-                            </div>
-
-                            <div className="p-6 space-y-6">
-                                {/* Thumbnail Preview */}
-                                <div className="flex justify-center">
-                                    {thumbnailPreview ? (
-                                        <img src={thumbnailPreview} className="h-32 rounded-lg object-cover border-2 border-yellow-400" />
-                                    ) : editForm.thumbnail_url ? (
-                                        <img src={editForm.thumbnail_url} className="h-32 rounded-lg object-cover" />
-                                    ) : (
-                                        <div className="h-32 w-32 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-gray-400">No Thumbnail</div>
-                                    )}
-                                </div>
-
-                                {/* Title */}
-                                <div>
-                                    <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Title</label>
-                                    <input type="text" value={editForm.title || ""} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400" />
-                                </div>
-
-                                {/* Category */}
-                                <div>
-                                    <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Category</label>
-                                    <select value={editForm.category || ""} onChange={(e) => setEditForm({ ...editForm, category: e.target.value })} className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400 mb-2">
-                                        {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                                    </select>
-
-                                    {isAdmin && (
-                                        <>
-                                            <div className="flex flex-wrap gap-2 mb-2">
-                                                {categories.map(cat => (
-                                                    <div key={cat} className="flex items-center gap-1 bg-gray-200 dark:bg-[#333] px-2 py-1 rounded text-xs">
-                                                        <span className="text-black dark:text-white">{cat}</span>
-                                                        <button type="button" onClick={() => deleteCategory(cat)} className="text-red-500 hover:text-red-700"><X size={12} /></button>
-                                                    </div>
-                                                ))}
+                            {/* AD INTERSTITIAL MODAL */}
+                            {showAdInterstitial && (
+                                <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/95 backdrop-blur-md p-4">
+                                    <div className="w-full max-w-lg bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 text-center border border-gray-200 dark:border-gray-800 shadow-2xl">
+                                        <div className="mb-6">
+                                            <div className="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                                                <Download size={32} className="text-black" />
                                             </div>
-                                            <div className="flex gap-2">
-                                                <input type="text" placeholder="Add new category..." value={newCategory} onChange={(e) => setNewCategory(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCategory())} className="flex-1 p-2 text-sm rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400" />
-                                                <button type="button" onClick={addCategory} disabled={isAddingCategory} className="px-3 py-2 bg-yellow-400 text-black rounded-lg font-bold text-sm hover:bg-yellow-500 disabled:opacity-50"><Plus size={14} /></button>
+                                            <h3 className="text-2xl font-black mb-2">Preparing Download...</h3>
+                                            <p className="text-gray-500">Please wait while we generate your secure download link.</p>
+                                        </div>
+
+                                        {/* Ad Container */}
+                                        <div className="min-h-[250px] bg-gray-50 dark:bg-black rounded-xl mb-6 flex items-center justify-center border-2 border-dashed border-gray-200 dark:border-gray-800 overflow-hidden">
+                                            <AdUnit type="native" />
+                                        </div>
+
+                                        <div className="flex flex-col items-center gap-2">
+                                            <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
+                                                <div
+                                                    className="h-full bg-yellow-400 transition-all duration-1000 ease-linear"
+                                                    style={{ width: (((15 - interstitialTimer) / 15) * 100) + "%" }}
+                                                />
                                             </div>
-                                        </>
-                                    )}
-                                </div>
-
-                                {/* Language */}
-                                <div>
-                                    <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Language</label>
-                                    <select value={editForm.language || ""} onChange={(e) => setEditForm({ ...editForm, language: e.target.value })} className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400 mb-2">
-                                        {languages.map(lang => <option key={lang} value={lang}>{lang}</option>)}
-                                    </select>
-
-                                    {isAdmin && (
-                                        <>
-                                            <div className="flex flex-wrap gap-2 mb-2">
-                                                {languages.map(lang => (
-                                                    <div key={lang} className="flex items-center gap-1 bg-gray-200 dark:bg-[#333] px-2 py-1 rounded text-xs">
-                                                        <span className="text-black dark:text-white">{lang}</span>
-                                                        <button type="button" onClick={() => deleteLanguage(lang)} className="text-red-500 hover:text-red-700"><X size={12} /></button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <input type="text" placeholder="Add new language..." value={newLanguage} onChange={(e) => setNewLanguage(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addLanguage())} className="flex-1 p-2 text-sm rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400" />
-                                                <button type="button" onClick={addLanguage} disabled={isAddingLanguage} className="px-3 py-2 bg-yellow-400 text-black rounded-lg font-bold text-sm hover:bg-yellow-500 disabled:opacity-50"><Plus size={14} /></button>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-
-                                {/* Credit */}
-                                <div>
-                                    <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Credit / Source (Optional)</label>
-                                    <input type="text" value={editForm.credit || ""} onChange={(e) => setEditForm({ ...editForm, credit: e.target.value })} placeholder="Original creator or source..." className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400" />
-                                </div>
-
-                                {/* Thumbnail Upload */}
-                                {(editingMeme.media_type === "audio" || editingMeme.media_type === "video" || editingMeme.media_type === "raw") && (
-                                    <div>
-                                        <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Change Thumbnail</label>
-                                        <input type="file" accept="image/*" onChange={handleThumbnailChange} className="w-full text-sm text-gray-500" />
+                                            <p className="text-sm font-bold text-gray-400">
+                                                Starting in {interstitialTimer} seconds...
+                                            </p>
+                                        </div>
                                     </div>
-                                )}
-                            </div>
-
-                            <div className="p-6 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 sticky bottom-0 bg-white dark:bg-[#1f1f1f]">
-                                <button onClick={() => setEditingMeme(null)} className="px-5 py-2.5 rounded-xl font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">Cancel</button>
-                                <button onClick={saveEdits} disabled={saving} className="px-5 py-2.5 rounded-xl font-bold bg-yellow-400 text-black hover:bg-yellow-500 disabled:opacity-50">
-                                    {saving ? "Saving..." : "Save Changes"}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* AD INTERSTITIAL MODAL */}
-                {showAdInterstitial && (
-                    <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/95 backdrop-blur-md p-4">
-                        <div className="w-full max-w-lg bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 text-center border border-gray-200 dark:border-gray-800 shadow-2xl">
-                            <div className="mb-6">
-                                <div className="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                                    <Download size={32} className="text-black" />
                                 </div>
-                                <h3 className="text-2xl font-black mb-2">Preparing Download...</h3>
-                                <p className="text-gray-500">Please wait while we generate your secure download link.</p>
-                            </div>
+                            )}
 
-                            {/* Ad Container */}
-                            <div className="min-h-[250px] bg-gray-50 dark:bg-black rounded-xl mb-6 flex items-center justify-center border-2 border-dashed border-gray-200 dark:border-gray-800 overflow-hidden">
-                                <AdUnit type="native" />
-                            </div>
-
-                            <div className="flex flex-col items-center gap-2">
-                                <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
-                                    <div
-                                        className="h-full bg-yellow-400 transition-all duration-1000 ease-linear"
-                                        style={{ width: `${((15 - interstitialTimer) / 15) * 100}%` }}
-                                    />
-                                </div>
-                                <p className="text-sm font-bold text-gray-400">
-                                    Starting in {interstitialTimer} seconds...
-                                </p>
-                            </div>
                         </div>
-                    </div>
-                )}
+                        );
+    }
 
-            </div>
-            );
-}
-
-            export default function Home() {
-    return (
-            <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin"></div></div>}>
-                <HomeContent />
-            </Suspense>
-            );
-}
+                        export default function Home() {
+        return (
+                        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin"></div></div>}>
+                            <HomeContent />
+                        </Suspense>
+                        );
+    }
