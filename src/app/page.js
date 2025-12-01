@@ -604,7 +604,7 @@ function HomeContent() {
         const shareData = {
             title: meme.title,
             text: `Check out this meme on MemeHub HQ: ${meme.title}`,
-            url: window.location.origin + `/user/${meme.uploader_id}?meme=${meme.id}`
+            url: window.location.origin + `/meme/${meme.id}`
         };
 
         try {
@@ -677,20 +677,14 @@ function HomeContent() {
             setMemes(prev => prev.filter(m => m.id !== meme.id));
             if (selectedMeme?.id === meme.id) setSelectedMeme(null);
             toast.success("Meme deleted");
+
         } catch (error) {
             toast.error("Failed to delete meme");
         }
     };
 
-    const openMeme = async (meme) => {
-        setSelectedMeme(meme);
-        try {
-            const memeRef = doc(db, "memes", meme.id);
-            await updateDoc(memeRef, { views: increment(1) });
-            setMemes(prev => prev.map(m => m.id === meme.id ? { ...m, views: (m.views || 0) + 1 } : m));
-        } catch (error) {
-            console.error("Error updating views:", error);
-        }
+    const openMeme = (meme) => {
+        router.push(`/meme/${meme.id}`);
     };
 
     // Edit Functions
