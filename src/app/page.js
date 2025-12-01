@@ -844,12 +844,11 @@ function HomeContent() {
                         <span>The #1 Place for Viral Memes</span>
                     </div>
                     <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6">
-                        Discover & Share <br />
-                        <span className="text-yellow-400">Viral Laughter</span>
+                        Looking for meme clips ? <br />
+                        <span className="text-yellow-400">For your videos</span>
                     </h1>
                     <p className="text-xl text-gray-500 dark:text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-                        Join millions of users sharing the funniest memes, videos, and sound effects.
-                        Upload your own or browse the latest trends.
+                        HD meme clips for editors — easy download, clean UI, no signup. Perfect for YouTube, Shorts & Reels.
                     </p>
                     {!user && (
                         <div className="mt-6 flex justify-center">
