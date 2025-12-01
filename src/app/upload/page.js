@@ -359,7 +359,7 @@ export default function UploadPage() {
             <AlertCircle className="w-10 h-10 text-yellow-500" />
           </div>
           <h2 className="text-3xl font-black text-black dark:text-white mb-3">Login Required</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-8">You need to sign in with your Google account to upload memes to MemeHubHQ.</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-8">You need to sign in with your Google account to upload memes to MemeHub HQ.</p>
           <button onClick={googleLogin} className="w-full bg-black dark:bg-white text-white dark:text-black px-8 py-4 rounded-full font-bold text-lg hover:scale-105 transition-transform active:scale-95 shadow-xl flex items-center justify-center gap-3">
             <svg className="w-6 h-6" viewBox="0 0 24 24">
               <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -391,8 +391,8 @@ export default function UploadPage() {
               <button
                 onClick={() => setBulkMode(false)}
                 className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${!bulkMode
-                    ? "bg-yellow-400 text-black shadow-lg"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                  ? "bg-yellow-400 text-black shadow-lg"
+                  : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
                   }`}
               >
                 <Image size={20} />
@@ -401,8 +401,8 @@ export default function UploadPage() {
               <button
                 onClick={() => setBulkMode(true)}
                 className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${bulkMode
-                    ? "bg-yellow-400 text-black shadow-lg"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                  ? "bg-yellow-400 text-black shadow-lg"
+                  : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
                   }`}
               >
                 <Layers size={20} />

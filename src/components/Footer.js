@@ -14,7 +14,7 @@ export default function Footer() {
                                 <span className="text-xl">😂</span>
                             </div>
                             <span className="text-2xl font-black tracking-tighter text-black dark:text-white">
-                                MemeHub<span className="text-yellow-400">HQ</span>
+                                MemeHub <span className="text-yellow-400">HQ</span>
                             </span>
                         </Link>
                         <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed mb-6">
@@ -59,10 +59,10 @@ export default function Footer() {
 
                 <div className="border-t border-gray-100 dark:border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
                     <p className="text-sm text-gray-400">
-                        © {new Date().getFullYear()} MemeHubHQ. All rights reserved.
+                        © {new Date().getFullYear()} MemeHub HQ. All rights reserved.
                     </p>
                     <div className="flex items-center gap-1 text-sm text-gray-400">
-                        Made with <Heart size={14} className="text-red-500 fill-red-500" /> by <span className="text-black dark:text-white font-bold">MemeHubHQ Team</span>
+                        Made with <Heart size={14} className="text-red-500 fill-red-500" /> by <span className="text-black dark:text-white font-bold">MemeHub HQ Team</span>
                     </div>
                 </div>
             </div>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { TrendingUp, Smile, Video, Music, Sparkles, Download, Share2, Clock, Eye, X, Play, Trash2, MoreVertical, Edit2, Plus, Check, ShieldAlert } from "lucide-react";
+import { TrendingUp, Smile, Video, Music, Sparkles, Download, Share2, Clock, Eye, X, Play, Trash2, MoreVertical, Edit2, Plus, Check, ShieldAlert, Star } from "lucide-react";
 import { useEffect, useState, Suspense, useRef, useCallback, Fragment } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, limit, getDocs, updateDoc, doc, increment, arrayUnion, arrayRemove, deleteDoc, setDoc, getDoc, orderBy, startAfter } from "firebase/firestore";
@@ -62,6 +62,22 @@ function HomeContent() {
     const [activeCategory, setActiveCategory] = useState("all");
     const [sortBy, setSortBy] = useState("newest"); // newest, oldest, popular, a_z, downloads, reacted
     const [selectedMeme, setSelectedMeme] = useState(null);
+    const [userFavorites, setUserFavorites] = useState([]);
+
+    // Fetch User Favorites
+    useEffect(() => {
+        if (user) {
+            const fetchFavorites = async () => {
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    setUserFavorites(userDoc.data().favorites || []);
+                }
+            };
+            fetchFavorites();
+        } else {
+            setUserFavorites([]);
+        }
+    }, [user]);
 
     // Ad & Download Logic State
     const [downloadUnlocked, setDownloadUnlocked] = useState(false);
@@ -558,6 +574,51 @@ function HomeContent() {
         }
     };
 
+    // Handle Favorite
+    const handleFavorite = async (e, meme) => {
+        e.stopPropagation();
+        if (!user) return toast.error("Please login to favorite!");
+
+        const isFavorite = userFavorites.includes(meme.id);
+        const userRef = doc(db, "users", user.uid);
+
+        // Optimistic Update
+        setUserFavorites(prev => isFavorite ? prev.filter(id => id !== meme.id) : [...prev, meme.id]);
+
+        try {
+            await setDoc(userRef, {
+                favorites: isFavorite ? arrayRemove(meme.id) : arrayUnion(meme.id)
+            }, { merge: true });
+            toast.success(isFavorite ? "Removed from favorites" : "Added to favorites");
+        } catch (error) {
+            console.error("Error updating favorites:", error);
+            toast.error("Failed to update favorites");
+            // Revert optimistic update
+            setUserFavorites(prev => isFavorite ? [...prev, meme.id] : prev.filter(id => id !== meme.id));
+        }
+    };
+
+    // Handle Share
+    const handleShare = async (e, meme) => {
+        e.stopPropagation();
+        const shareData = {
+            title: meme.title,
+            text: `Check out this meme on MemeHub HQ: ${meme.title}`,
+            url: window.location.origin + `/user/${meme.uploader_id}?meme=${meme.id}`
+        };
+
+        try {
+            if (navigator.share) {
+                await navigator.share(shareData);
+            } else {
+                await navigator.clipboard.writeText(shareData.url);
+                toast.success("Link copied to clipboard!");
+            }
+        } catch (err) {
+            console.error("Share failed:", err);
+        }
+    };
+
     // Wrapper to handle Ad Interstitial
     const handleDownload = (e, memeId, url, filename, source = "card") => {
         e.stopPropagation();
@@ -912,7 +973,7 @@ function HomeContent() {
                         <p className="text-gray-500">Be the first to upload one!</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                         {displayItems.map((item, idx) => (
                             item.type === 'ad' ? (
                                 <div key={item.id} className="bg-gray-100 dark:bg-[#1a1a1a] rounded-xl overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center min-h-[320px]">
@@ -922,10 +983,10 @@ function HomeContent() {
                                 <Fragment key={item.data.id}>
                                     <div
                                         onClick={() => openMeme(item.data)}
-                                        className="group relative rounded-2xl bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-[#252525] overflow-hidden hover:shadow-2xl hover:shadow-yellow-400/10 dark:hover:border-yellow-400/30 transition-all duration-300 flex flex-col cursor-pointer"
+                                        className="group relative rounded-2xl bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-[#252525] hover:shadow-2xl hover:shadow-yellow-400/10 dark:hover:border-yellow-400/30 transition-all duration-300 flex flex-col cursor-pointer"
                                     >
                                         {/* MEDIA DISPLAY */}
-                                        <div className="aspect-[4/3] bg-black flex items-center justify-center relative overflow-hidden">
+                                        <div className="aspect-[4/3] bg-black flex items-center justify-center relative overflow-hidden rounded-t-2xl">
                                             {item.data.thumbnail_url ? (
                                                 <img src={item.data.thumbnail_url} alt={item.data.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                             ) : item.data.media_type === "video" || item.data.file_url.endsWith(".mp4") ? (
@@ -972,47 +1033,52 @@ function HomeContent() {
                                         </div>
 
                                         {/* CARD FOOTER */}
-                                        <div className="p-4 flex flex-col flex-1">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <h3 className="font-bold text-lg truncate text-black dark:text-white flex-1 mr-2">{item.data.title}</h3>
-                                                <span className="text-[10px] text-gray-400 whitespace-nowrap mt-1">{timeAgo(item.data.createdAt)}</span>
-                                            </div>
+                                        <div className="p-3 flex flex-col gap-2 flex-1">
+                                            {/* Title - 2 lines max */}
+                                            <h3 className="font-semibold text-xs leading-tight line-clamp-2 text-black dark:text-white">{item.data.title}</h3>
 
-                                            <Link
-                                                href={`/user/${item.data.uploader_id}`}
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="flex items-center gap-2 mb-4 hover:opacity-70 transition-opacity w-fit"
-                                            >
-                                                <img src={item.data.uploader_pic || "https://ui-avatars.com/api/?name=User"} alt={item.data.uploader_name || "User"} className="w-5 h-5 rounded-full" />
-                                                <span className="text-xs text-gray-500 dark:text-gray-400 truncate hover:text-yellow-500 transition-colors">{item.data.uploader_name}</span>
-                                            </Link>
+                                            {/* Username + Share/Favorite */}
+                                            <div className="flex items-center justify-between gap-2">
+                                                <Link
+                                                    href={`/user/${item.data.uploader_id}`}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="flex items-center gap-1.5 hover:opacity-70 transition-opacity min-w-0 flex-1"
+                                                >
+                                                    <img src={item.data.uploader_pic || "https://ui-avatars.com/api/?name=User"} alt={item.data.uploader_name || "User"} className="w-4 h-4 rounded-full flex-shrink-0" />
+                                                    <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate hover:text-yellow-500 transition-colors">{item.data.uploader_name}</span>
+                                                </Link>
 
-                                            <div className="mt-auto flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-800">
-                                                <div className="flex items-center gap-3 text-xs text-gray-500 font-medium">
-                                                    <span className="flex items-center gap-1"><Eye size={14} /> {item.data.views || 0}</span>
-                                                    <span className="flex items-center gap-1"><Download size={14} /> {item.data.downloads || 0}</span>
-                                                </div>
-
-                                                <div className="flex items-center gap-2">
-                                                    {/* Add to Download List */}
+                                                <div className="flex items-center gap-0.5 flex-shrink-0">
+                                                    {/* Share Button */}
                                                     <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            if (isInDownloadList(item.data.id)) {
-                                                                removeFromDownloadList(item.data.id);
-                                                            } else {
-                                                                addToDownloadList(item.data);
-                                                            }
-                                                        }}
-                                                        className={`w-6 h-6 flex items-center justify-center rounded-md border-2 transition-all ${isInDownloadList(item.data.id)
-                                                            ? "bg-black border-black text-white dark:bg-white dark:border-white dark:text-black"
-                                                            : "bg-transparent border-gray-300 dark:border-gray-600 hover:border-black dark:hover:border-white"
-                                                            }`}
-                                                        title={isInDownloadList(item.data.id) ? "Remove from download list" : "Add to download list"}
+                                                        onClick={(e) => handleShare(e, item.data)}
+                                                        className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                                        title="Share"
                                                     >
-                                                        {isInDownloadList(item.data.id) && <Download size={12} strokeWidth={3} />}
+                                                        <Share2 size={13} />
                                                     </button>
 
+                                                    {/* Favorite Button */}
+                                                    <button
+                                                        onClick={(e) => handleFavorite(e, item.data)}
+                                                        className={`p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${userFavorites.includes(item.data.id) ? "text-yellow-400" : "text-gray-400 hover:text-yellow-500"}`}
+                                                        title="Favorite"
+                                                    >
+                                                        <Star size={13} fill={userFavorites.includes(item.data.id) ? "currentColor" : "none"} />
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Stats + Actions */}
+                                            <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800">
+                                                {/* Stats */}
+                                                <div className="flex items-center gap-2 text-[10px] text-gray-400 font-medium">
+                                                    <span className="flex items-center gap-0.5"><Eye size={11} /> {item.data.views || 0}</span>
+                                                    <span className="flex items-center gap-0.5"><Download size={11} /> {item.data.downloads || 0}</span>
+                                                </div>
+
+                                                {/* Actions */}
+                                                <div className="flex items-center gap-1">
                                                     {/* Menu */}
                                                     {(canDelete(item.data) || ADMIN_IDS.includes(user?.uid)) && (
                                                         <div className="relative">
@@ -1021,21 +1087,21 @@ function HomeContent() {
                                                                     e.stopPropagation();
                                                                     setOpenMenuId(openMenuId === item.data.id ? null : item.data.id);
                                                                 }}
-                                                                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-colors"
+                                                                className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 transition-colors"
                                                             >
-                                                                <MoreVertical size={16} />
+                                                                <MoreVertical size={13} />
                                                             </button>
                                                             {openMenuId === item.data.id && (
-                                                                <div className="absolute right-0 bottom-full mb-2 w-32 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-20 overflow-hidden">
+                                                                <div className="absolute right-0 top-full mt-1 w-24 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
                                                                     <button
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             openEditModal(item.data);
                                                                             setOpenMenuId(null);
                                                                         }}
-                                                                        className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-left text-sm text-black dark:text-white"
+                                                                        className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 text-left text-xs text-black dark:text-white"
                                                                     >
-                                                                        <Edit2 size={14} /> Edit
+                                                                        <Edit2 size={12} /> Edit
                                                                     </button>
                                                                     {canDelete(item.data) && (
                                                                         <button
@@ -1043,9 +1109,9 @@ function HomeContent() {
                                                                                 handleDelete(e, item.data);
                                                                                 setOpenMenuId(null);
                                                                             }}
-                                                                            className="w-full flex items-center gap-2 px-4 py-2 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 text-left text-sm"
+                                                                            className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 text-left text-xs"
                                                                         >
-                                                                            <Trash2 size={14} /> Delete
+                                                                            <Trash2 size={12} /> Delete
                                                                         </button>
                                                                     )}
                                                                 </div>
@@ -1056,7 +1122,7 @@ function HomeContent() {
                                                     {/* Reaction */}
                                                     <button
                                                         onClick={(e) => handleReaction(e, item.data)}
-                                                        className={`flex items-center gap-1 px-3 py-1.5 rounded-full transition-colors text-xs font-bold ${item.data.reactedBy?.includes(user?.uid)
+                                                        className={`flex items-center gap-1 px-2 py-1 rounded-full transition-colors text-[10px] font-bold ${item.data.reactedBy?.includes(user?.uid)
                                                             ? "bg-yellow-400 text-black"
                                                             : "bg-yellow-50 dark:bg-yellow-400/10 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-400/20"
                                                             }`}

@@ -2,10 +2,10 @@ export default function JsonLdSchema() {
     const websiteSchema = {
         '@context': 'https://schema.org',
         '@type': 'WebSite',
-        name: 'MemeHubHQ',
+        name: 'MemeHub HQ',
         alternateName: 'Meme Hub HQ',
         url: 'https://memehubhq.vercel.app',
-        description: 'Discover and share the internet\'s funniest memes, viral videos, and sound effects.',
+        description: 'Discover viral memes, funny footage, and trending clips—all in one place! Free to browse and download, our platform helps content creators quickly find the perfect clips for their videos.',
         potentialAction: {
             '@type': 'SearchAction',
             target: {
@@ -19,10 +19,10 @@ export default function JsonLdSchema() {
     const organizationSchema = {
         '@context': 'https://schema.org',
         '@type': 'Organization',
-        name: 'MemeHubHQ',
+        name: 'MemeHub HQ',
         url: 'https://memehubhq.vercel.app',
         logo: 'https://memehubhq.vercel.app/logo.png',
-        description: 'The world\'s fastest growing meme community',
+        description: 'Discover viral memes, funny footage, and trending clips—all in one place! Free to browse and download, our platform helps content creators quickly find the perfect clips for their videos.',
         sameAs: [
             // Add your social media URLs
             'https://twitter.com/memehubhq',
