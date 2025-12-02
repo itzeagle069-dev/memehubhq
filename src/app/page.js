@@ -629,7 +629,7 @@ function HomeContent() {
         const shareData = {
             title: meme.title,
             text: `Check out this meme on MemeHub HQ: ${meme.title}`,
-            url: window.location.origin + `/?meme=${meme.id}`
+            url: window.location.origin + `/meme/${meme.id}`
         };
 
         try {
@@ -708,15 +708,8 @@ function HomeContent() {
         }
     };
 
-    const openMeme = async (meme) => {
-        setSelectedMeme(meme);
-        try {
-            const memeRef = doc(db, "memes", meme.id);
-            await updateDoc(memeRef, { views: increment(1) });
-            setMemes(prev => prev.map(m => m.id === meme.id ? { ...m, views: (m.views || 0) + 1 } : m));
-        } catch (error) {
-            console.error("Error updating views:", error);
-        }
+    const openMeme = (meme) => {
+        router.push(`/meme/${meme.id}`);
     };
 
     // Edit Functions
