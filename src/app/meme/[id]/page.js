@@ -343,7 +343,7 @@ export default function MemePage() {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#050505] text-black dark:text-white">
             {/* Header */}
-            <div className="bg-white dark:bg-[#0a0a0a] border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40">
+            <div className="bg-white dark:bg-[#0a0a0a] border-b border-gray-200 dark:border-gray-800 sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
                     <button
                         onClick={() => router.back()}
@@ -413,8 +413,8 @@ export default function MemePage() {
                                 <button
                                     onClick={handleFollow}
                                     className={`px-4 py-2 rounded-full font-bold text-sm transition-colors flex items-center gap-2 ${isFollowing
-                                            ? "bg-gray-200 dark:bg-gray-800 text-black dark:text-white"
-                                            : "bg-yellow-400 text-black hover:bg-yellow-500"
+                                        ? "bg-gray-200 dark:bg-gray-800 text-black dark:text-white"
+                                        : "bg-yellow-400 text-black hover:bg-yellow-500"
                                         }`}
                                 >
                                     {isFollowing ? <UserCheck size={16} /> : <UserPlus size={16} />}
@@ -446,8 +446,8 @@ export default function MemePage() {
                             <button
                                 onClick={handleReaction}
                                 className={`flex-1 py-3 rounded-xl font-bold transition-colors ${meme.reactedBy?.includes(user?.uid)
-                                        ? "bg-yellow-400 text-black"
-                                        : "bg-gray-100 dark:bg-[#222] hover:bg-gray-200 dark:hover:bg-[#333]"
+                                    ? "bg-yellow-400 text-black"
+                                    : "bg-gray-100 dark:bg-[#222] hover:bg-gray-200 dark:hover:bg-[#333]"
                                     }`}
                             >
                                 😂 {meme.reactedBy?.includes(user?.uid) ? "Reacted" : "React"}
@@ -457,8 +457,8 @@ export default function MemePage() {
                                 onClick={handleDownload}
                                 disabled={!downloadUnlocked}
                                 className={`flex-1 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 ${!downloadUnlocked
-                                        ? "bg-gray-200 dark:bg-gray-800 cursor-not-allowed text-gray-500"
-                                        : "bg-yellow-400 text-black hover:bg-yellow-500"
+                                    ? "bg-gray-200 dark:bg-gray-800 cursor-not-allowed text-gray-500"
+                                    : "bg-yellow-400 text-black hover:bg-yellow-500"
                                     }`}
                             >
                                 {!downloadUnlocked ? (

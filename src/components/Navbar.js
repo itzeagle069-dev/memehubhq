@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useDownloadList } from "@/context/DownloadContext";
-import { Menu, X, Search, Upload, LogOut, User as UserIcon, Sun, Moon, ChevronDown, ShoppingBag, Trash2, ShieldAlert, Download, Filter, Check } from "lucide-react";
+import { Menu, X, Search, Upload, LogOut, User as UserIcon, Sun, Moon, ChevronDown, ShoppingBag, Trash2, ShieldAlert, Download, Filter, Check, Star } from "lucide-react";
 
 import { toast } from "react-hot-toast";
 import { db } from "@/lib/firebase";
@@ -344,6 +344,11 @@ export default function Navbar() {
                                     Upload
                                 </Link>
 
+                                <Link href="/favorites" className="hover:text-yellow-400 transition-colors flex items-center gap-1">
+                                    <Star size={16} />
+                                    Favorites
+                                </Link>
+
                                 <button onClick={() => setIsDownloadOpen(true)} className="hover:text-yellow-400 transition-colors flex items-center gap-1 relative">
                                     <ShoppingBag size={16} />
                                     Downloads
@@ -398,6 +403,10 @@ export default function Navbar() {
                                                     <UserIcon size={16} />
                                                     My Profile
                                                 </Link>
+                                                <Link href="/favorites" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#252525]" onClick={() => setIsProfileOpen(false)}>
+                                                    <Star size={16} />
+                                                    My Favorites
+                                                </Link>
                                                 {user.uid === ADMIN_ID && (
                                                     <Link href="/admin" className="flex items-center gap-2 px-4 py-2 text-sm text-yellow-600 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 font-bold" onClick={() => setIsProfileOpen(false)}>
                                                         <ShieldAlert size={16} />
@@ -437,6 +446,15 @@ export default function Navbar() {
                                 aria-label="Upload meme"
                             >
                                 <Upload size={20} />
+                            </Link>
+
+                            {/* Favorites Button - Mobile */}
+                            <Link
+                                href="/favorites"
+                                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#1a1a1a] text-gray-600 dark:text-gray-300 hover:text-yellow-400 transition-colors"
+                                aria-label="Favorites"
+                            >
+                                <Star size={20} />
                             </Link>
 
                             {/* Download Bag - Mobile */}
@@ -505,6 +523,14 @@ export default function Navbar() {
                                     >
                                         <UserIcon size={18} />
                                         My Profile
+                                    </Link>
+                                    <Link
+                                        href="/favorites"
+                                        className="flex items-center gap-2 py-2.5 text-gray-600 dark:text-gray-300 hover:text-yellow-400"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                    >
+                                        <Star size={18} />
+                                        My Favorites
                                     </Link>
                                     <button
                                         onClick={logout}
