@@ -79,6 +79,31 @@ function HomeContent() {
         }
     }, [user]);
 
+    // Auto-open meme from shared link
+    useEffect(() => {
+        const memeId = searchParams.get('meme');
+        if (memeId && memes.length > 0 && !selectedMeme) {
+            const meme = memes.find(m => m.id === memeId);
+            if (meme) {
+                openMeme(meme);
+            } else {
+                // If meme not in current list, fetch it from Firebase
+                const fetchMeme = async () => {
+                    try {
+                        const memeDoc = await getDoc(doc(db, "memes", memeId));
+                        if (memeDoc.exists()) {
+                            const memeData = { id: memeDoc.id, ...memeDoc.data() };
+                            openMeme(memeData);
+                        }
+                    } catch (error) {
+                        console.error("Error fetching shared meme:", error);
+                    }
+                };
+                fetchMeme();
+            }
+        }
+    }, [searchParams, memes]);
+
     // Ad & Download Logic State
     const [downloadUnlocked, setDownloadUnlocked] = useState(false);
     const [downloadTimer, setDownloadTimer] = useState(3);
@@ -604,7 +629,7 @@ function HomeContent() {
         const shareData = {
             title: meme.title,
             text: `Check out this meme on MemeHub HQ: ${meme.title}`,
-            url: window.location.origin + `/meme/${meme.id}`
+            url: window.location.origin + `/?meme=${meme.id}`
         };
 
         try {
@@ -683,8 +708,15 @@ function HomeContent() {
         }
     };
 
-    const openMeme = (meme) => {
-        router.push(`/meme/${meme.id}`);
+    const openMeme = async (meme) => {
+        setSelectedMeme(meme);
+        try {
+            const memeRef = doc(db, "memes", meme.id);
+            await updateDoc(memeRef, { views: increment(1) });
+            setMemes(prev => prev.map(m => m.id === meme.id ? { ...m, views: (m.views || 0) + 1 } : m));
+        } catch (error) {
+            console.error("Error updating views:", error);
+        }
     };
 
     // Edit Functions
