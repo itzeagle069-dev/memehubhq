@@ -927,26 +927,17 @@ function HomeContent() {
             <div id="explore" className="max-w-7xl mx-auto px-4">
                 {/* ADMIN CONTROLS */}
                 {isAdmin && memes.length > 0 && (
-                    <div className="mb-6 p-5 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-2 border-red-300 dark:border-red-700 rounded-2xl shadow-lg">
-                        {/* Header */}
-                        <div className="flex items-center justify-between mb-4 pb-3 border-b border-red-200 dark:border-red-800">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-red-100 dark:bg-red-900/40 rounded-lg">
-                                    <ShieldAlert className="text-red-600 dark:text-red-400" size={24} />
-                                </div>
-                                <div>
-                                    <h3 className="font-black text-lg text-red-800 dark:text-red-300">Admin Panel</h3>
-                                    {isSelectionMode && (
-                                        <p className="text-xs text-red-600 dark:text-red-400 font-semibold">
-                                            {selectedMemes.length} item{selectedMemes.length !== 1 ? 's' : ''} selected
-                                        </p>
-                                    )}
-                                </div>
+                    <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/10 border-2 border-red-200 dark:border-red-800 rounded-xl">
+                        <div className="flex flex-wrap gap-3 items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <ShieldAlert className="text-red-500" size={20} />
+                                <span className="font-bold text-red-700 dark:text-red-400">Admin Controls</span>
+                                {isSelectionMode && (
+                                    <span className="text-sm text-red-600 dark:text-red-400">
+                                        ({selectedMemes.length} selected)
+                                    </span>
+                                )}
                             </div>
-                        </div>
-
-                        {/* Multi-Select Mode Section */}
-                        <div className="space-y-3">
                             <div className="flex flex-wrap gap-2">
                                 <button
                                     onClick={() => {
@@ -954,48 +945,44 @@ function HomeContent() {
                                         setSelectedMemes([]);
                                         setEditingQueue([]);
                                     }}
-                                    className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md ${isSelectionMode
-                                        ? "bg-gray-600 hover:bg-gray-700 text-white"
-                                        : "bg-blue-600 hover:bg-blue-700 text-white"
+                                    className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${isSelectionMode
+                                        ? "bg-gray-500 hover:bg-gray-600 text-white"
+                                        : "bg-blue-500 hover:bg-blue-600 text-white"
                                         }`}
                                 >
-                                    {isSelectionMode ? "✕ Exit Selection Mode" : "☑ Enable Multi-Select"}
+                                    {isSelectionMode ? "Exit Selection Mode" : "Multi-Select Mode"}
                                 </button>
 
                                 {isSelectionMode && (
                                     <>
-                                        <button onClick={handleSelectAll} className="px-4 py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-xl text-sm font-bold shadow-md transition-all">
-                                            ☑ Select All
+                                        <button onClick={handleSelectAll} className="px-3 py-2 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-lg text-sm font-bold">
+                                            Select All
                                         </button>
-                                        <button onClick={handleUnselectAll} className="px-4 py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-xl text-sm font-bold shadow-md transition-all">
-                                            ☐ Unselect All
+                                        <button onClick={handleUnselectAll} className="px-3 py-2 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-lg text-sm font-bold">
+                                            Unselect All
                                         </button>
                                     </>
                                 )}
-                            </div>
 
-                            {/* Bulk Actions Section */}
-                            {isSelectionMode && selectedMemes.length > 0 && (
-                                <div className="pt-3 border-t border-red-200 dark:border-red-800">
-                                    <p className="text-xs font-bold text-red-700 dark:text-red-400 mb-2 uppercase tracking-wide">Bulk Actions</p>
-                                    <div className="flex flex-wrap gap-2">
+                                {isSelectionMode && selectedMemes.length > 0 && (
+                                    <>
                                         <button
                                             onClick={handleEditSelected}
-                                            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm flex items-center gap-2 shadow-md transition-all"
+                                            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-bold text-sm flex items-center gap-2"
                                         >
                                             <Edit2 size={16} />
                                             Edit Selected ({selectedMemes.length})
                                         </button>
                                         <button
                                             onClick={handleBulkDelete}
-                                            className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm flex items-center gap-2 shadow-md transition-all"
+                                            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold text-sm flex items-center gap-2"
                                         >
                                             <Trash2 size={16} />
                                             Delete Selected ({selectedMemes.length})
                                         </button>
-                                    </div>
-                                </div>
-                            )}
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}

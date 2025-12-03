@@ -34,6 +34,12 @@ export default function AdminPage() {
     const [filterType, setFilterType] = useState("all");
     const [sortOrder, setSortOrder] = useState("recent");
 
+    // Multi-select mode for published memes
+    const [publishedMemes, setPublishedMemes] = useState([]);
+    const [selectedMemes, setSelectedMemes] = useState([]);
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [editingQueue, setEditingQueue] = useState([]);
+
     // Helper function for time ago
     const timeAgo = (timestamp) => {
         if (!timestamp) return "Just now";
