@@ -93,9 +93,10 @@ export default function AdminPage() {
                 setPendingMemes(memes);
 
                 // Fetch published memes for management
-                const publishedQ = query(collection(db, "memes"), where("status", "==", "published"), orderBy("createdAt", "desc"));
+                const publishedQ = query(collection(db, "memes"), orderBy("createdAt", "desc"));
                 const publishedSnapshot = await getDocs(publishedQ);
-                setPublishedMemes(publishedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                const allMemes = publishedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setPublishedMemes(allMemes.filter(m => m.status === "published"));
 
                 const reportsQ = query(collection(db, "reports"), orderBy("createdAt", "desc"));
                 const reportsSnapshot = await getDocs(reportsQ);
@@ -426,15 +427,15 @@ export default function AdminPage() {
 
     const handleBulkDelete = async () => {
         if (selectedMemes.length === 0) return toast.error("No memes selected");
-        
+
         const password = prompt("⚠️ ADMIN ACTION REQUIRED\n\nEnter admin password to continue:");
         if (password !== "1122") return toast.error("Incorrect password");
-        
+
         const confirmMsg = `Are you sure you want to DELETE ${selectedMemes.length} selected meme(s)?\n\nThis action cannot be undone.`;
         if (!confirm(confirmMsg)) return;
 
         const toastId = toast.loading(`Deleting ${selectedMemes.length} memes...`);
-        
+
         try {
             await Promise.all(selectedMemes.map(id => deleteDoc(doc(db, "memes", id))));
             setPublishedMemes(prev => prev.filter(m => !selectedMemes.includes(m.id)));
@@ -737,11 +738,11 @@ export default function AdminPage() {
                                     {isSelectionMode ? "Exit Selection Mode" : "Multi-Select Mode"}
                                 </button>
                                 {isSelectionMode && (<><button onClick={handleSelectAll} className="px-3 py-2 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-lg text-sm font-bold">Select All</button>
-                                <button onClick={handleUnselectAll} className="px-3 py-2 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-lg text-sm font-bold">Unselect All</button></>)}
+                                    <button onClick={handleUnselectAll} className="px-3 py-2 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-lg text-sm font-bold">Unselect All</button></>)}
                                 {isSelectionMode && selectedMemes.length > 0 && (<><button onClick={handleEditSelected} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-bold text-sm flex items-center gap-2">
                                     <Edit2 size={16} />Edit Selected ({selectedMemes.length})</button>
-                                <button onClick={handleBulkDelete} className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold text-sm flex items-center gap-2">
-                                    <Trash2 size={16} />Delete Selected ({selectedMemes.length})</button></>)}
+                                    <button onClick={handleBulkDelete} className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold text-sm flex items-center gap-2">
+                                        <Trash2 size={16} />Delete Selected ({selectedMemes.length})</button></>)}
                             </div>
                         </div>
                     </div>
