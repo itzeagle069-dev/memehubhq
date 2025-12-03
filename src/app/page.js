@@ -1160,6 +1160,7 @@ function HomeContent() {
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
                                 </Fragment>
                             )
                         ))}
