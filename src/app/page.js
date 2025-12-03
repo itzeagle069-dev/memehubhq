@@ -1151,7 +1151,7 @@ function HomeContent() {
                                                         </div>
                                                     )}
 
-                                                    {/* Add to Downloads Button with checkbox */}
+                                                    {/* Add to Downloads Button - Checkbox only */}
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
@@ -1161,22 +1161,16 @@ function HomeContent() {
                                                                 addToDownloadList(item.data);
                                                             }
                                                         }}
-                                                        className={`flex items-center gap-1 px-2 py-1 rounded-full transition-colors text-[10px] font-bold ${isInDownloadList(item.data.id)
-                                                            ? "bg-blue-500 text-white"
-                                                            : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-blue-100 dark:hover:bg-blue-900/30"
-                                                            }`}
-                                                        title={isInDownloadList(item.data.id) ? "Remove from downloads" : "Add to downloads"}
+                                                        className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-blue-500 transition-colors relative"
+                                                        title={isInDownloadList(item.data.id) ? "Added to downloads" : "Add to downloads"}
                                                     >
                                                         {isInDownloadList(item.data.id) ? (
-                                                            <>
-                                                                <CheckSquare size={11} />
-                                                                Added
-                                                            </>
+                                                            <div className="relative">
+                                                                <Square size={13} className="text-blue-500" />
+                                                                <Download size={8} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-blue-500" />
+                                                            </div>
                                                         ) : (
-                                                            <>
-                                                                <Square size={11} />
-                                                                Add to Download
-                                                            </>
+                                                            <Square size={13} />
                                                         )}
                                                     </button>
 
