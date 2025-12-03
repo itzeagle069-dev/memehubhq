@@ -400,6 +400,8 @@ function HomeContent() {
                     } else {
                         fetchedMemes.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
                     }
+                } else if (sortBy === "a_z") {
+                    fetchedMemes.sort((a, b) => (a.title || "").toLowerCase().localeCompare((b.title || "").toLowerCase()));
                 }
                 // For other sort options (A-Z, Popular, etc.), we rely PURELY on Firestore order
                 // to ensure pagination works correctly across the entire database.
@@ -429,7 +431,7 @@ function HomeContent() {
 
             if (sortBy === "oldest") { sortDir = "asc"; }
             else if (sortBy === "popular") { sortField = "views"; sortDir = "desc"; }
-            else if (sortBy === "a_z") { sortField = "title_lowercase"; sortDir = "asc"; }
+            else if (sortBy === "a_z") { sortField = "title"; sortDir = "asc"; }
             else if (sortBy === "downloads") { sortField = "downloads"; sortDir = "desc"; }
             else if (sortBy === "reacted") { sortField = "reactions.haha"; sortDir = "desc"; }
 
@@ -973,14 +975,14 @@ function HomeContent() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                         {displayItems.map((item, idx) => (
                             item.type === 'ad' ? (
-                                <div key={item.id} className="bg-gray-100 dark:bg-[#1a1a1a] rounded-2xl overflow-hidden border border-gray-100 dark:border-[#252525] flex items-center justify-center h-full min-h-[300px]">
+                                <div key={item.id} className="bg-gray-100 dark:bg-[#1a1a1a] rounded-2xl overflow-hidden border border-gray-100 dark:border-[#252525] flex items-center justify-center h-full aspect-[4/5]">
                                     <AdUnit type="native" />
                                 </div>
                             ) : (
                                 <Fragment key={item.data.id}>
                                     <div
                                         onClick={() => openMeme(item.data)}
-                                        className="group relative rounded-2xl bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-[#252525] hover:shadow-2xl hover:shadow-yellow-400/10 dark:hover:border-yellow-400/30 transition-all duration-300 flex flex-col cursor-pointer"
+                                        className="group relative rounded-2xl bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-[#252525] hover:shadow-2xl hover:shadow-yellow-400/10 dark:hover:border-yellow-400/30 transition-all duration-300 flex flex-col cursor-pointer h-full"
                                     >
                                         {/* MEDIA DISPLAY */}
                                         <div className="aspect-[4/3] bg-black flex items-center justify-center relative overflow-hidden rounded-t-2xl">
