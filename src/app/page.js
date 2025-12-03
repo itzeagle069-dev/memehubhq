@@ -1345,102 +1345,123 @@ function HomeContent() {
 
                 {/* EDIT MODAL */}
                 {editingMeme && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                        <div className="bg-white dark:bg-[#1f1f1f] w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
-                            <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center sticky top-0 bg-white dark:bg-[#1f1f1f] z-10">
-                                <h3 className="text-xl font-black">Edit Meme</h3>
-                                <button onClick={() => setEditingMeme(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"><X size={20} /></button>
-                            </div>
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
+                        <div className="bg-white dark:bg-[#1f1f1f] w-full max-w-6xl rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
 
-                            <div className="p-6 space-y-6">
-                                {/* Thumbnail Preview */}
-                                <div className="flex justify-center">
-                                    {thumbnailPreview ? (
-                                        <img src={thumbnailPreview} className="h-32 rounded-lg object-cover border-2 border-yellow-400" />
-                                    ) : editForm.thumbnail_url ? (
-                                        <img src={editForm.thumbnail_url} className="h-32 rounded-lg object-cover" />
-                                    ) : (
-                                        <div className="h-32 w-32 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-gray-400">No Thumbnail</div>
-                                    )}
-                                </div>
-
-                                {/* Title */}
-                                <div>
-                                    <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Title</label>
-                                    <input type="text" value={editForm.title || ""} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400" />
-                                </div>
-
-                                {/* Category */}
-                                <div>
-                                    <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Category</label>
-                                    <select value={editForm.category || ""} onChange={(e) => setEditForm({ ...editForm, category: e.target.value })} className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400 mb-2">
-                                        {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                                    </select>
-
-                                    {isAdmin && (
-                                        <>
-                                            <div className="flex flex-wrap gap-2 mb-2">
-                                                {categories.map(cat => (
-                                                    <div key={cat} className="flex items-center gap-1 bg-gray-200 dark:bg-[#333] px-2 py-1 rounded text-xs">
-                                                        <span className="text-black dark:text-white">{cat}</span>
-                                                        <button type="button" onClick={() => deleteCategory(cat)} className="text-red-500 hover:text-red-700"><X size={12} /></button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <input type="text" placeholder="Add new category..." value={newCategory} onChange={(e) => setNewCategory(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCategory())} className="flex-1 p-2 text-sm rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400" />
-                                                <button type="button" onClick={addCategory} disabled={isAddingCategory} className="px-3 py-2 bg-yellow-400 text-black rounded-lg font-bold text-sm hover:bg-yellow-500 disabled:opacity-50"><Plus size={14} /></button>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-
-                                {/* Language */}
-                                <div>
-                                    <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Language</label>
-                                    <select value={editForm.language || ""} onChange={(e) => setEditForm({ ...editForm, language: e.target.value })} className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400 mb-2">
-                                        {languages.map(lang => <option key={lang} value={lang}>{lang}</option>)}
-                                    </select>
-
-                                    {isAdmin && (
-                                        <>
-                                            <div className="flex flex-wrap gap-2 mb-2">
-                                                {languages.map(lang => (
-                                                    <div key={lang} className="flex items-center gap-1 bg-gray-200 dark:bg-[#333] px-2 py-1 rounded text-xs">
-                                                        <span className="text-black dark:text-white">{lang}</span>
-                                                        <button type="button" onClick={() => deleteLanguage(lang)} className="text-red-500 hover:text-red-700"><X size={12} /></button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <input type="text" placeholder="Add new language..." value={newLanguage} onChange={(e) => setNewLanguage(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addLanguage())} className="flex-1 p-2 text-sm rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400" />
-                                                <button type="button" onClick={addLanguage} disabled={isAddingLanguage} className="px-3 py-2 bg-yellow-400 text-black rounded-lg font-bold text-sm hover:bg-yellow-500 disabled:opacity-50"><Plus size={14} /></button>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-
-                                {/* Credit */}
-                                <div>
-                                    <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Credit / Source (Optional)</label>
-                                    <input type="text" value={editForm.credit || ""} onChange={(e) => setEditForm({ ...editForm, credit: e.target.value })} placeholder="Original creator or source..." className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400" />
-                                </div>
-
-                                {/* Thumbnail Upload */}
-                                {/* Thumbnail Upload */}
-                                {(editingMeme.media_type === "audio" || editingMeme.media_type === "video" || editingMeme.media_type === "raw") && (
-                                    <div>
-                                        <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Change Thumbnail</label>
-                                        <input type="file" accept="image/*" onChange={handleThumbnailChange} className="w-full text-sm text-gray-500" />
+                            {/* LEFT: Media Preview */}
+                            <div className="w-full md:w-1/2 bg-black flex items-center justify-center relative p-4">
+                                {editingMeme.media_type === "video" || editingMeme.file_url.endsWith(".mp4") ? (
+                                    <video src={editingMeme.file_url} controls className="max-w-full max-h-full rounded-lg shadow-2xl" />
+                                ) : editingMeme.media_type === "raw" || editingMeme.media_type === "audio" ? (
+                                    <div className="text-center">
+                                        <Music className="w-24 h-24 text-yellow-400 mx-auto mb-4 animate-pulse" />
+                                        <audio src={editingMeme.file_url} controls className="w-full min-w-[300px]" />
                                     </div>
+                                ) : (
+                                    <img src={editingMeme.file_url} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
                                 )}
                             </div>
 
-                            <div className="p-6 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 sticky bottom-0 bg-white dark:bg-[#1f1f1f]">
-                                <button onClick={() => setEditingMeme(null)} className="px-5 py-2.5 rounded-xl font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">Cancel</button>
-                                <button onClick={saveEdits} disabled={saving} className="px-5 py-2.5 rounded-xl font-bold bg-yellow-400 text-black hover:bg-yellow-500 disabled:opacity-50">
-                                    {saving ? "Saving..." : "Save Changes"}
-                                </button>
+                            {/* RIGHT: Edit Form */}
+                            <div className="w-full md:w-1/2 flex flex-col bg-white dark:bg-[#1f1f1f] border-l border-gray-200 dark:border-gray-800">
+                                <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-[#1f1f1f]">
+                                    <h3 className="text-xl font-black">Edit Meme</h3>
+                                    <button onClick={() => setEditingMeme(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"><X size={20} /></button>
+                                </div>
+
+                                <div className="p-6 space-y-6 overflow-y-auto flex-1">
+                                    {/* Thumbnail Preview (Small) */}
+                                    <div className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-[#252525] rounded-xl border border-gray-100 dark:border-gray-800">
+                                        {thumbnailPreview ? (
+                                            <img src={thumbnailPreview} className="w-16 h-16 rounded-lg object-cover border-2 border-yellow-400" />
+                                        ) : editForm.thumbnail_url ? (
+                                            <img src={editForm.thumbnail_url} className="w-16 h-16 rounded-lg object-cover" />
+                                        ) : (
+                                            <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center text-gray-400"><Smile size={20} /></div>
+                                        )}
+                                        <div>
+                                            <p className="text-xs font-bold text-gray-500 uppercase mb-1">Current Thumbnail</p>
+                                            <p className="text-xs text-gray-400">Preview of what users will see</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Title */}
+                                    <div>
+                                        <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Title</label>
+                                        <input type="text" value={editForm.title || ""} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400" />
+                                    </div>
+
+                                    {/* Category */}
+                                    <div>
+                                        <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Category</label>
+                                        <select value={editForm.category || ""} onChange={(e) => setEditForm({ ...editForm, category: e.target.value })} className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400 mb-2">
+                                            {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                        </select>
+
+                                        {isAdmin && (
+                                            <>
+                                                <div className="flex flex-wrap gap-2 mb-2">
+                                                    {categories.map(cat => (
+                                                        <div key={cat} className="flex items-center gap-1 bg-gray-200 dark:bg-[#333] px-2 py-1 rounded text-xs">
+                                                            <span className="text-black dark:text-white">{cat}</span>
+                                                            <button type="button" onClick={() => deleteCategory(cat)} className="text-red-500 hover:text-red-700"><X size={12} /></button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <input type="text" placeholder="Add new category..." value={newCategory} onChange={(e) => setNewCategory(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCategory())} className="flex-1 p-2 text-sm rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400" />
+                                                    <button type="button" onClick={addCategory} disabled={isAddingCategory} className="px-3 py-2 bg-yellow-400 text-black rounded-lg font-bold text-sm hover:bg-yellow-500 disabled:opacity-50"><Plus size={14} /></button>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {/* Language */}
+                                    <div>
+                                        <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Language</label>
+                                        <select value={editForm.language || ""} onChange={(e) => setEditForm({ ...editForm, language: e.target.value })} className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400 mb-2">
+                                            {languages.map(lang => <option key={lang} value={lang}>{lang}</option>)}
+                                        </select>
+
+                                        {isAdmin && (
+                                            <>
+                                                <div className="flex flex-wrap gap-2 mb-2">
+                                                    {languages.map(lang => (
+                                                        <div key={lang} className="flex items-center gap-1 bg-gray-200 dark:bg-[#333] px-2 py-1 rounded text-xs">
+                                                            <span className="text-black dark:text-white">{lang}</span>
+                                                            <button type="button" onClick={() => deleteLanguage(lang)} className="text-red-500 hover:text-red-700"><X size={12} /></button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <input type="text" placeholder="Add new language..." value={newLanguage} onChange={(e) => setNewLanguage(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addLanguage())} className="flex-1 p-2 text-sm rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400" />
+                                                    <button type="button" onClick={addLanguage} disabled={isAddingLanguage} className="px-3 py-2 bg-yellow-400 text-black rounded-lg font-bold text-sm hover:bg-yellow-500 disabled:opacity-50"><Plus size={14} /></button>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {/* Credit */}
+                                    <div>
+                                        <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Credit / Source (Optional)</label>
+                                        <input type="text" value={editForm.credit || ""} onChange={(e) => setEditForm({ ...editForm, credit: e.target.value })} placeholder="Original creator or source..." className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400" />
+                                    </div>
+
+                                    {/* Thumbnail Upload */}
+                                    {(editingMeme.media_type === "audio" || editingMeme.media_type === "video" || editingMeme.media_type === "raw") && (
+                                        <div>
+                                            <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Change Thumbnail</label>
+                                            <input type="file" accept="image/*" onChange={handleThumbnailChange} className="w-full text-sm text-gray-500" />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="p-6 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 bg-white dark:bg-[#1f1f1f]">
+                                    <button onClick={() => setEditingMeme(null)} className="px-5 py-2.5 rounded-xl font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">Cancel</button>
+                                    <button onClick={saveEdits} disabled={saving} className="px-5 py-2.5 rounded-xl font-bold bg-yellow-400 text-black hover:bg-yellow-500 disabled:opacity-50">
+                                        {saving ? "Saving..." : "Save Changes"}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
