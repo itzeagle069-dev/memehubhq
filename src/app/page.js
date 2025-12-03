@@ -1055,17 +1055,27 @@ function HomeContent() {
                                             {/* Title - 2 lines max */}
                                             <h3 className="font-semibold text-xs leading-tight line-clamp-2 text-black dark:text-white">{item.data.title}</h3>
 
-                                            {/* Username + Share/Favorite */}
+                                            {/* Username + Stats + Share/Favorite */}
                                             <div className="flex items-center justify-between gap-2">
-                                                <Link
-                                                    href={`/user/${item.data.uploader_id}`}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className="flex items-center gap-1.5 hover:opacity-70 transition-opacity min-w-0 flex-1"
-                                                >
-                                                    <img src={item.data.uploader_pic || "https://ui-avatars.com/api/?name=User"} alt={item.data.uploader_name || "User"} className="w-4 h-4 rounded-full flex-shrink-0" />
-                                                    <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate hover:text-yellow-500 transition-colors">{item.data.uploader_name}</span>
-                                                </Link>
+                                                {/* Left: Username + View/Download counts */}
+                                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                                    <Link
+                                                        href={`/user/${item.data.uploader_id}`}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="flex items-center gap-1.5 hover:opacity-70 transition-opacity min-w-0"
+                                                    >
+                                                        <img src={item.data.uploader_pic || "https://ui-avatars.com/api/?name=User"} alt={item.data.uploader_name || "User"} className="w-4 h-4 rounded-full flex-shrink-0" />
+                                                        <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate hover:text-yellow-500 transition-colors">{item.data.uploader_name}</span>
+                                                    </Link>
 
+                                                    {/* Stats */}
+                                                    <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-medium flex-shrink-0">
+                                                        <span className="flex items-center gap-0.5"><Eye size={10} /> {item.data.views || 0}</span>
+                                                        <span className="flex items-center gap-0.5"><Download size={10} /> {item.data.downloads || 0}</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Right: Share + Favorite */}
                                                 <div className="flex items-center gap-0.5 flex-shrink-0">
                                                     {/* Share Button */}
                                                     <button
@@ -1084,34 +1094,22 @@ function HomeContent() {
                                                     >
                                                         <Star size={13} fill={userFavorites.includes(item.data.id) ? "currentColor" : "none"} />
                                                     </button>
-
-                                                    {/* Add to Downloads Button */}
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            if (isInDownloadList(item.data.id)) {
-                                                                removeFromDownloadList(item.data.id);
-                                                            } else {
-                                                                addToDownloadList(item.data);
-                                                            }
-                                                        }}
-                                                        className={`p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isInDownloadList(item.data.id) ? "text-blue-500" : "text-gray-400 hover:text-blue-500"}`}
-                                                        title={isInDownloadList(item.data.id) ? "Remove from downloads" : "Add to downloads"}
-                                                    >
-                                                        <ListPlus size={13} fill={isInDownloadList(item.data.id) ? "currentColor" : "none"} />
-                                                    </button>
                                                 </div>
                                             </div>
 
-                                            {/* Stats + Actions */}
+                                            {/* Bottom Row: Reaction + Download Button */}
                                             <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800">
-                                                {/* Stats */}
-                                                <div className="flex items-center gap-2 text-[10px] text-gray-400 font-medium">
-                                                    <span className="flex items-center gap-0.5"><Eye size={11} /> {item.data.views || 0}</span>
-                                                    <span className="flex items-center gap-0.5"><Download size={11} /> {item.data.downloads || 0}</span>
-                                                </div>
+                                                {/* Reaction Button */}
+                                                <button
+                                                    onClick={(e) => handleReaction(e, item.data)}
+                                                    className={`flex items-center gap-1 px-2 py-1 rounded-full transition-colors text-[10px] font-bold ${item.data.reactedBy?.includes(user?.uid)
+                                                        ? "bg-yellow-400 text-black"
+                                                        : "bg-yellow-50 dark:bg-yellow-400/10 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-400/20"
+                                                        }`}
+                                                >
+                                                    {item.data.reactions?.haha || 0} 😂
+                                                </button>
 
-                                                {/* Actions */}
                                                 <div className="flex items-center gap-1">
                                                     {/* Menu */}
                                                     {(canDelete(item.data) || ADMIN_IDS.includes(user?.uid)) && (
@@ -1153,15 +1151,24 @@ function HomeContent() {
                                                         </div>
                                                     )}
 
-                                                    {/* Reaction */}
+                                                    {/* Add to Downloads Button with text */}
                                                     <button
-                                                        onClick={(e) => handleReaction(e, item.data)}
-                                                        className={`flex items-center gap-1 px-2 py-1 rounded-full transition-colors text-[10px] font-bold ${item.data.reactedBy?.includes(user?.uid)
-                                                            ? "bg-yellow-400 text-black"
-                                                            : "bg-yellow-50 dark:bg-yellow-400/10 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-400/20"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (isInDownloadList(item.data.id)) {
+                                                                removeFromDownloadList(item.data.id);
+                                                            } else {
+                                                                addToDownloadList(item.data);
+                                                            }
+                                                        }}
+                                                        className={`flex items-center gap-1 px-2 py-1 rounded-full transition-colors text-[10px] font-bold ${isInDownloadList(item.data.id)
+                                                            ? "bg-blue-500 text-white"
+                                                            : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-blue-100 dark:hover:bg-blue-900/30"
                                                             }`}
+                                                        title={isInDownloadList(item.data.id) ? "Remove from downloads" : "Add to downloads"}
                                                     >
-                                                        {item.data.reactions?.haha || 0} 😂
+                                                        <Download size={11} />
+                                                        {isInDownloadList(item.data.id) ? "Added" : "Download"}
                                                     </button>
 
                                                     {/* Download Button */}
