@@ -131,6 +131,7 @@ function HomeContent() {
     // Admin bulk delete states
     const [selectedMemes, setSelectedMemes] = useState([]);
     const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [editingQueue, setEditingQueue] = useState([]);
 
     // Pagination states
     const [lastVisible, setLastVisible] = useState(null);
@@ -738,7 +739,34 @@ function HomeContent() {
             });
             setMemes(prev => prev.map(m => m.id === editingMeme.id ? { ...m, ...editForm, thumbnail_url: thumbnailUrl, credit: editForm.credit || null } : m));
             toast.success("Changes saved!", { id: toastId });
-            setEditingMeme(null);
+
+            // Handle Bulk Edit Queue
+            if (editingQueue.length > 0) {
+                const nextQueue = editingQueue.slice(1);
+                setEditingQueue(nextQueue);
+
+                if (nextQueue.length > 0) {
+                    const nextMeme = nextQueue[0];
+                    setEditingMeme(nextMeme);
+                    setEditForm({
+                        title: nextMeme.title,
+                        category: nextMeme.category,
+                        language: nextMeme.language,
+                        thumbnail_url: nextMeme.thumbnail_url || "",
+                        credit: nextMeme.credit || ""
+                    });
+                    setNewThumbnail(null);
+                    setThumbnailPreview(null);
+                    toast("Opening next meme...", { icon: "➡️" });
+                } else {
+                    setEditingMeme(null);
+                    toast.success("All selected memes edited!");
+                    setIsSelectionMode(false);
+                    setSelectedMemes([]);
+                }
+            } else {
+                setEditingMeme(null);
+            }
         } catch (error) {
             toast.error("Failed to save changes", { id: toastId });
         } finally {
@@ -824,6 +852,26 @@ function HomeContent() {
         }
     };
 
+    // Admin Selection Handlers
+    const handleSelectAll = () => {
+        const allIds = memes.map(m => m.id);
+        setSelectedMemes(allIds);
+        toast.success(`Selected all ${allIds.length} loaded memes`);
+    };
+
+    const handleUnselectAll = () => {
+        setSelectedMemes([]);
+        toast.success("Selection cleared");
+    };
+
+    const handleEditSelected = () => {
+        if (selectedMemes.length === 0) return toast.error("No memes selected");
+        const queue = memes.filter(m => selectedMemes.includes(m.id));
+        setEditingQueue(queue);
+        openEditModal(queue[0]);
+        toast("Starting bulk edit mode...", { icon: "📝" });
+    };
+
     // Generate display items with ads
     const getDisplayItems = (memes) => {
         const items = [];
@@ -895,29 +943,45 @@ function HomeContent() {
                                     onClick={() => {
                                         setIsSelectionMode(!isSelectionMode);
                                         setSelectedMemes([]);
+                                        setEditingQueue([]);
                                     }}
                                     className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${isSelectionMode
                                         ? "bg-gray-500 hover:bg-gray-600 text-white"
                                         : "bg-blue-500 hover:bg-blue-600 text-white"
                                         }`}
                                 >
-                                    {isSelectionMode ? "Cancel Selection" : "Multi-Select Mode"}
+                                    {isSelectionMode ? "Exit Selection Mode" : "Multi-Select Mode"}
                                 </button>
-                                {isSelectionMode && selectedMemes.length > 0 && (
-                                    <button
-                                        onClick={handleBulkDelete}
-                                        className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold text-sm"
-                                    >
-                                        Delete Selected ({selectedMemes.length})
-                                    </button>
+
+                                {isSelectionMode && (
+                                    <>
+                                        <button onClick={handleSelectAll} className="px-3 py-2 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-lg text-sm font-bold">
+                                            Select All
+                                        </button>
+                                        <button onClick={handleUnselectAll} className="px-3 py-2 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-lg text-sm font-bold">
+                                            Unselect All
+                                        </button>
+                                    </>
                                 )}
-                                <button
-                                    onClick={handleDeleteAll}
-                                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-sm flex items-center gap-2"
-                                >
-                                    <Trash2 size={16} />
-                                    Delete All Memes
-                                </button>
+
+                                {isSelectionMode && selectedMemes.length > 0 && (
+                                    <>
+                                        <button
+                                            onClick={handleEditSelected}
+                                            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-bold text-sm flex items-center gap-2"
+                                        >
+                                            <Edit2 size={16} />
+                                            Edit Selected ({selectedMemes.length})
+                                        </button>
+                                        <button
+                                            onClick={handleBulkDelete}
+                                            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold text-sm flex items-center gap-2"
+                                        >
+                                            <Trash2 size={16} />
+                                            Delete Selected ({selectedMemes.length})
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
