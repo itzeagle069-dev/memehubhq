@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, updateDoc, doc, deleteDoc, setDoc, getDoc, orderBy, writeBatch, limit, startAfter } from "firebase/firestore";
+import { collection, query, where, getDocs, updateDoc, doc, deleteDoc, setDoc, getDoc, orderBy, writeBatch } from "firebase/firestore";
 import { Check, Trash2, ShieldAlert, Loader2, Edit2, X, Music, Eye, Plus, MessageSquare, Mail, CheckCheck, XCircle } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
@@ -33,17 +33,6 @@ export default function AdminPage() {
     const [isAddingLanguage, setIsAddingLanguage] = useState(false);
     const [filterType, setFilterType] = useState("all");
     const [sortOrder, setSortOrder] = useState("recent");
-
-    // Published Memes State
-    const [publishedMemes, setPublishedMemes] = useState([]);
-    const [lastPublished, setLastPublished] = useState(null);
-    const [hasMorePublished, setHasMorePublished] = useState(true);
-    const [loadingPublished, setLoadingPublished] = useState(false);
-
-    // Bulk Action State
-    const [selectedMemes, setSelectedMemes] = useState([]);
-    const [isSelectionMode, setIsSelectionMode] = useState(false);
-    const [editingQueue, setEditingQueue] = useState([]);
 
     // Helper function for time ago
     const timeAgo = (timestamp) => {
@@ -110,100 +99,6 @@ export default function AdminPage() {
 
         fetchData();
     }, [user, loading, router]);
-
-    // Fetch Published Memes
-    useEffect(() => {
-        if (activeTab === "published" && publishedMemes.length === 0) {
-            const fetchPublished = async () => {
-                setLoadingPublished(true);
-                try {
-                    const q = query(
-                        collection(db, "memes"),
-                        where("status", "==", "published"),
-                        orderBy("createdAt", "desc"),
-                        limit(28)
-                    );
-                    const snapshot = await getDocs(q);
-                    const memes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    setPublishedMemes(memes);
-                    setLastPublished(snapshot.docs[snapshot.docs.length - 1]);
-                    setHasMorePublished(snapshot.docs.length === 28);
-                } catch (err) {
-                    console.error("Error fetching published:", err);
-                } finally {
-                    setLoadingPublished(false);
-                }
-            };
-            fetchPublished();
-        }
-    }, [activeTab]);
-
-    const loadMorePublished = async () => {
-        if (!lastPublished || !hasMorePublished || loadingPublished) return;
-        setLoadingPublished(true);
-        try {
-            const q = query(
-                collection(db, "memes"),
-                where("status", "==", "published"),
-                orderBy("createdAt", "desc"),
-                startAfter(lastPublished),
-                limit(28)
-            );
-            const snapshot = await getDocs(q);
-            const newMemes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setPublishedMemes(prev => [...prev, ...newMemes]);
-            setLastPublished(snapshot.docs[snapshot.docs.length - 1]);
-            setHasMorePublished(snapshot.docs.length === 28);
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoadingPublished(false);
-        }
-    };
-
-    // Bulk Handlers
-    const handleSelectAll = () => {
-        const allIds = publishedMemes.map(m => m.id);
-        setSelectedMemes(allIds);
-        toast.success(`Selected all ${allIds.length} loaded memes`);
-    };
-
-    const handleUnselectAll = () => {
-        setSelectedMemes([]);
-        toast.success("Selection cleared");
-    };
-
-    const handleEditSelected = () => {
-        if (selectedMemes.length === 0) return toast.error("No memes selected");
-        const queue = publishedMemes.filter(m => selectedMemes.includes(m.id));
-        setEditingQueue(queue);
-        openEditModal(queue[0]);
-        toast("Starting bulk edit mode...", { icon: "📝" });
-    };
-
-    const handleBulkDelete = async () => {
-        if (selectedMemes.length === 0) return toast.error("No memes selected");
-        if (!confirm(`Delete ${selectedMemes.length} memes?`)) return;
-
-        const toastId = toast.loading("Deleting...");
-        try {
-            await Promise.all(selectedMemes.map(id => deleteDoc(doc(db, "memes", id))));
-            setPublishedMemes(prev => prev.filter(m => !selectedMemes.includes(m.id)));
-            setSelectedMemes([]);
-            setIsSelectionMode(false);
-            toast.success("Deleted!", { id: toastId });
-        } catch (err) {
-            toast.error("Failed to delete", { id: toastId });
-        }
-    };
-
-    const toggleMemeSelection = (memeId) => {
-        setSelectedMemes(prev =>
-            prev.includes(memeId)
-                ? prev.filter(id => id !== memeId)
-                : [...prev, memeId]
-        );
-    };
 
     const addCategory = async () => {
         const trimmed = newCategory.trim().toLowerCase();
