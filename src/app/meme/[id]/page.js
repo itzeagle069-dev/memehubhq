@@ -620,7 +620,7 @@ export default function MemePage() {
 
                 {/* Sidebar - Right 1/3 */}
                 <div className="lg:col-span-1">
-                    <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-[#252525] p-5 sticky top-20 shadow-lg">
+                    <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-[#252525] p-5 sticky top-36 shadow-lg">
                         <h3 className="font-black text-lg mb-4 flex items-center gap-2">
                             <Play size={20} className="text-yellow-500" />
                             Related Memes
