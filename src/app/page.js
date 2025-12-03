@@ -925,68 +925,6 @@ function HomeContent() {
             </section>
 
             <div id="explore" className="max-w-7xl mx-auto px-4">
-                {/* ADMIN CONTROLS */}
-                {isAdmin && memes.length > 0 && (
-                    <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/10 border-2 border-red-200 dark:border-red-800 rounded-xl">
-                        <div className="flex flex-wrap gap-3 items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <ShieldAlert className="text-red-500" size={20} />
-                                <span className="font-bold text-red-700 dark:text-red-400">Admin Controls</span>
-                                {isSelectionMode && (
-                                    <span className="text-sm text-red-600 dark:text-red-400">
-                                        ({selectedMemes.length} selected)
-                                    </span>
-                                )}
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                <button
-                                    onClick={() => {
-                                        setIsSelectionMode(!isSelectionMode);
-                                        setSelectedMemes([]);
-                                        setEditingQueue([]);
-                                    }}
-                                    className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${isSelectionMode
-                                        ? "bg-gray-500 hover:bg-gray-600 text-white"
-                                        : "bg-blue-500 hover:bg-blue-600 text-white"
-                                        }`}
-                                >
-                                    {isSelectionMode ? "Exit Selection Mode" : "Multi-Select Mode"}
-                                </button>
-
-                                {isSelectionMode && (
-                                    <>
-                                        <button onClick={handleSelectAll} className="px-3 py-2 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-lg text-sm font-bold">
-                                            Select All
-                                        </button>
-                                        <button onClick={handleUnselectAll} className="px-3 py-2 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-lg text-sm font-bold">
-                                            Unselect All
-                                        </button>
-                                    </>
-                                )}
-
-                                {isSelectionMode && selectedMemes.length > 0 && (
-                                    <>
-                                        <button
-                                            onClick={handleEditSelected}
-                                            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-bold text-sm flex items-center gap-2"
-                                        >
-                                            <Edit2 size={16} />
-                                            Edit Selected ({selectedMemes.length})
-                                        </button>
-                                        <button
-                                            onClick={handleBulkDelete}
-                                            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold text-sm flex items-center gap-2"
-                                        >
-                                            <Trash2 size={16} />
-                                            Delete Selected ({selectedMemes.length})
-                                        </button>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 {/* 2. CATEGORY TABS */}
                 <AdUnit type="banner" />
                 <div className="flex flex-col gap-4 mb-8">
