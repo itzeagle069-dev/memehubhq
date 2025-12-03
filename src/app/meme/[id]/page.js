@@ -358,9 +358,9 @@ export default function MemePage() {
     if (!meme) return null;
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-[#050505] text-black dark:text-white">
+        <div className="min-h-screen bg-white dark:bg-[#050505] text-black dark:text-white">
             {/* Header */}
-            <div className="bg-white dark:bg-[#0a0a0a] border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40 backdrop-blur-md bg-opacity-95 dark:bg-opacity-95">
+            <div className="bg-white dark:bg-[#111] border-b border-gray-200 dark:border-[#222] sticky top-0 z-40 backdrop-blur-md bg-opacity-95 dark:bg-opacity-95">
                 <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
                     <button
                         onClick={() => router.back()}
@@ -410,9 +410,9 @@ export default function MemePage() {
                     </div>
 
                     {/* Meme Info Card */}
-                    <div className="bg-white dark:bg-[#0a0a0a] rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+                    <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-[#252525] overflow-hidden shadow-lg">
                         {/* Title & Category */}
-                        <div className="p-6 border-b border-gray-100 dark:border-gray-800">
+                        <div className="p-6 border-b border-gray-100 dark:border-[#252525]">
                             <div className="flex items-start justify-between gap-4 mb-3">
                                 <h1 className="text-2xl md:text-3xl font-black flex-1">{meme.title}</h1>
                                 <span className="px-3 py-1.5 rounded-full bg-yellow-400/20 text-yellow-600 dark:text-yellow-400 text-xs font-bold uppercase whitespace-nowrap">
@@ -443,7 +443,7 @@ export default function MemePage() {
                         </div>
 
                         {/* User Info & Follow */}
-                        <div className="p-6 border-b border-gray-100 dark:border-gray-800">
+                        <div className="p-6 border-b border-gray-100 dark:border-[#252525]">
                             <div className="flex items-center justify-between gap-4">
                                 <Link href={`/user/${meme.uploader_id}`} className="flex items-center gap-3 hover:opacity-70 transition-opacity">
                                     <img src={meme.uploader_pic || "https://ui-avatars.com/api/?name=User"} alt={meme.uploader_name} className="w-12 h-12 rounded-full ring-2 ring-gray-200 dark:ring-gray-700" />
@@ -470,13 +470,13 @@ export default function MemePage() {
 
                         {/* Description */}
                         {meme.description && (
-                            <div className="p-6 border-b border-gray-100 dark:border-gray-800">
+                            <div className="p-6 border-b border-gray-100 dark:border-[#252525]">
                                 <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{meme.description}</p>
                             </div>
                         )}
 
                         {/* Tags */}
-                        <div className="p-6 border-b border-gray-100 dark:border-gray-800">
+                        <div className="p-6 border-b border-gray-100 dark:border-[#252525]">
                             <div className="flex flex-wrap gap-2">
                                 <span className="px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-xs font-bold">
                                     {meme.language}
@@ -528,7 +528,7 @@ export default function MemePage() {
                     </div>
 
                     {/* Comments Section */}
-                    <div className="bg-white dark:bg-[#0a0a0a] rounded-2xl border border-gray-100 dark:border-gray-800 p-6 space-y-6">
+                    <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-[#252525] p-6 space-y-6 shadow-lg">
                         <div className="flex items-center justify-between">
                             <h3 className="text-xl font-black flex items-center gap-2">
                                 <MessageCircle size={22} className="text-blue-500" />
@@ -620,7 +620,7 @@ export default function MemePage() {
 
                 {/* Sidebar - Right 1/3 */}
                 <div className="lg:col-span-1">
-                    <div className="bg-white dark:bg-[#0a0a0a] rounded-2xl border border-gray-100 dark:border-gray-800 p-5 sticky top-20">
+                    <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-[#252525] p-5 sticky top-20 shadow-lg">
                         <h3 className="font-black text-lg mb-4 flex items-center gap-2">
                             <Play size={20} className="text-yellow-500" />
                             Related Memes
@@ -632,24 +632,27 @@ export default function MemePage() {
                                     href={`/meme/${relatedMeme.id}`}
                                     className="flex gap-3 hover:bg-gray-50 dark:hover:bg-gray-900 rounded-xl p-2 transition-all hover:scale-[1.02] group"
                                 >
-                                    <div className="w-28 h-20 bg-black rounded-lg overflow-hidden flex-shrink-0 relative">
+                                    <div className="w-28 h-20 bg-gradient-to-br from-gray-900 to-black rounded-lg overflow-hidden flex-shrink-0 relative">
                                         {relatedMeme.thumbnail_url ? (
                                             <img src={relatedMeme.thumbnail_url} alt={relatedMeme.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                                         ) : relatedMeme.media_type === "video" || relatedMeme.file_url.endsWith(".mp4") ? (
-                                            <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
-                                                <Play size={24} className="text-white opacity-75" />
-                                            </div>
+                                            <video
+                                                src={relatedMeme.file_url}
+                                                className="w-full h-full object-cover"
+                                                preload="metadata"
+                                                muted
+                                            />
                                         ) : relatedMeme.media_type === "audio" || relatedMeme.media_type === "raw" ? (
-                                            <div className="w-full h-full bg-gradient-to-br from-purple-900 to-black flex items-center justify-center">
-                                                <Music size={24} className="text-yellow-400" />
+                                            <div className="w-full h-full bg-gradient-to-br from-purple-600 via-purple-800 to-black flex items-center justify-center">
+                                                <Music size={24} className="text-yellow-400 animate-pulse" />
                                             </div>
                                         ) : (
                                             <img src={relatedMeme.file_url} alt={relatedMeme.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                                         )}
                                         {(relatedMeme.media_type === "video" || relatedMeme.file_url.endsWith(".mp4")) && (
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                <div className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center group-hover:bg-yellow-400 group-hover:text-black transition-all">
-                                                    <Play size={14} className="ml-0.5" fill="currentColor" />
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
+                                                <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white group-hover:bg-yellow-400 group-hover:text-black transition-all group-hover:scale-110 shadow-lg">
+                                                    <Play size={16} className="ml-0.5" fill="currentColor" />
                                                 </div>
                                             </div>
                                         )}
