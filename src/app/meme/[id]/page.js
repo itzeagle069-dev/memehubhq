@@ -7,7 +7,7 @@ import { doc, getDoc, collection, query, where, limit, getDocs, addDoc, deleteDo
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
-import { ArrowLeft, Eye, Download, Share2, Star, Music, MessageCircle, Send, Trash2, ThumbsUp, UserPlus, UserCheck, Play } from "lucide-react";
+import { ArrowLeft, Eye, Download, Share2, Star, Music, MessageCircle, Send, Trash2, ThumbsUp, UserPlus, UserCheck, Play, Heart, Smile } from "lucide-react";
 
 export default function MemePage() {
     const params = useParams();
@@ -134,13 +134,13 @@ export default function MemePage() {
                 collection(db, "memes"),
                 where("category", "==", currentMeme.category),
                 where("status", "==", "published"),
-                limit(6)
+                limit(8)
             );
             const snapshot = await getDocs(q);
             const memes = snapshot.docs
                 .map(doc => ({ id: doc.id, ...doc.data() }))
                 .filter(m => m.id !== currentMeme.id)
-                .slice(0, 5);
+                .slice(0, 6);
             setRelatedMemes(memes);
         } catch (error) {
             console.error("Error fetching related memes:", error);
@@ -360,27 +360,27 @@ export default function MemePage() {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#050505] text-black dark:text-white">
             {/* Header */}
-            <div className="bg-white dark:bg-[#0a0a0a] border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40">
+            <div className="bg-white dark:bg-[#0a0a0a] border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40 backdrop-blur-md bg-opacity-95 dark:bg-opacity-95">
                 <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
                     <button
                         onClick={() => router.back()}
-                        className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors"
+                        className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors group"
                     >
-                        <ArrowLeft size={20} />
+                        <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
                         <span className="font-semibold">Back</span>
                     </button>
 
                     <div className="flex items-center gap-2">
                         <button
                             onClick={handleShare}
-                            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                            className="p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all hover:scale-110"
                             title="Share"
                         >
                             <Share2 size={20} />
                         </button>
                         <button
                             onClick={handleFavorite}
-                            className={`p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isFavorited ? "text-yellow-400" : ""}`}
+                            className={`p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all hover:scale-110 ${isFavorited ? "text-yellow-400" : ""}`}
                             title="Favorite"
                         >
                             <Star size={20} fill={isFavorited ? "currentColor" : "none"} />
@@ -389,124 +389,156 @@ export default function MemePage() {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="max-w-7xl mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Main Content - Left 2/3 */}
-                <div className="lg:col-span-2 space-y-4">
+                <div className="lg:col-span-2 space-y-6">
                     {/* Media Player */}
-                    <div className="bg-black rounded-xl overflow-hidden aspect-video flex items-center justify-center">
-                        {meme.media_type === "video" || meme.file_url.endsWith(".mp4") ? (
-                            <video src={meme.file_url} controls className="w-full h-full" />
-                        ) : meme.media_type === "audio" || meme.media_type === "raw" ? (
-                            <div className="text-center p-8 w-full">
-                                {meme.thumbnail_url && <img src={meme.thumbnail_url} className="max-w-md max-h-64 mx-auto mb-6 rounded-lg" />}
-                                <Music className="w-24 h-24 text-yellow-400 mx-auto mb-6 animate-pulse" />
-                                <audio src={meme.file_url} controls className="w-full" autoPlay />
-                            </div>
-                        ) : (
-                            <img src={meme.file_url} alt={meme.title} className="max-w-full max-h-full object-contain" />
-                        )}
+                    <div className="bg-black rounded-2xl overflow-hidden shadow-2xl">
+                        <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-gray-900 to-black">
+                            {meme.media_type === "video" || meme.file_url.endsWith(".mp4") ? (
+                                <video src={meme.file_url} controls className="w-full h-full" poster={meme.thumbnail_url || ""} />
+                            ) : meme.media_type === "audio" || meme.media_type === "raw" ? (
+                                <div className="text-center p-8 w-full">
+                                    {meme.thumbnail_url && <img src={meme.thumbnail_url} className="max-w-md max-h-64 mx-auto mb-6 rounded-lg shadow-xl" />}
+                                    <Music className="w-24 h-24 text-yellow-400 mx-auto mb-6 animate-pulse" />
+                                    <audio src={meme.file_url} controls className="w-full max-w-md mx-auto" autoPlay />
+                                </div>
+                            ) : (
+                                <img src={meme.file_url} alt={meme.title} className="max-w-full max-h-full object-contain" />
+                            )}
+                        </div>
                     </div>
 
-                    {/* Meme Info */}
-                    <div className="bg-white dark:bg-[#1a1a1a] rounded-xl p-6 space-y-4">
-                        <h1 className="text-2xl font-bold">{meme.title}</h1>
+                    {/* Meme Info Card */}
+                    <div className="bg-white dark:bg-[#0a0a0a] rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+                        {/* Title & Category */}
+                        <div className="p-6 border-b border-gray-100 dark:border-gray-800">
+                            <div className="flex items-start justify-between gap-4 mb-3">
+                                <h1 className="text-2xl md:text-3xl font-black flex-1">{meme.title}</h1>
+                                <span className="px-3 py-1.5 rounded-full bg-yellow-400/20 text-yellow-600 dark:text-yellow-400 text-xs font-bold uppercase whitespace-nowrap">
+                                    {meme.category}
+                                </span>
+                            </div>
 
-                        {/* Stats */}
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                            <span className="flex items-center gap-1"><Eye size={16} /> {meme.views || 0} views</span>
-                            <span className="flex items-center gap-1"><Download size={16} /> {meme.downloads || 0} downloads</span>
-                            <span className="flex items-center gap-1">😂 {meme.reactions?.haha || 0} reactions</span>
+                            {/* Stats Bar */}
+                            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                                <span className="flex items-center gap-1.5 font-medium">
+                                    <Eye size={16} className="text-blue-500" />
+                                    {meme.views || 0} views
+                                </span>
+                                <span className="flex items-center gap-1.5 font-medium">
+                                    <Download size={16} className="text-green-500" />
+                                    {meme.downloads || 0} downloads
+                                </span>
+                                <span className="flex items-center gap-1.5 font-medium">
+                                    <Smile size={16} className="text-yellow-500" />
+                                    {meme.reactions?.haha || 0} reactions
+                                </span>
+                                {meme.createdAt && (
+                                    <span className="flex items-center gap-1.5 font-medium">
+                                        📅 {meme.createdAt?.toDate?.()?.toLocaleDateString() || "Recently"}
+                                    </span>
+                                )}
+                            </div>
                         </div>
 
-                        {/* User Info + Follow */}
-                        <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-800">
-                            <Link href={`/user/${meme.uploader_id}`} className="flex items-center gap-3 hover:opacity-70 transition-opacity">
-                                <img src={meme.uploader_pic || "https://ui-avatars.com/api/?name=User"} alt={meme.uploader_name} className="w-12 h-12 rounded-full" />
-                                <div>
-                                    <p className="font-bold">{meme.uploader_name}</p>
-                                    <p className="text-xs text-gray-500">{followerCount} followers</p>
-                                </div>
-                            </Link>
+                        {/* User Info & Follow */}
+                        <div className="p-6 border-b border-gray-100 dark:border-gray-800">
+                            <div className="flex items-center justify-between gap-4">
+                                <Link href={`/user/${meme.uploader_id}`} className="flex items-center gap-3 hover:opacity-70 transition-opacity">
+                                    <img src={meme.uploader_pic || "https://ui-avatars.com/api/?name=User"} alt={meme.uploader_name} className="w-12 h-12 rounded-full ring-2 ring-gray-200 dark:ring-gray-700" />
+                                    <div>
+                                        <p className="font-bold text-base">{meme.uploader_name}</p>
+                                        <p className="text-xs text-gray-500">{followerCount} followers</p>
+                                    </div>
+                                </Link>
 
-                            {user?.uid !== meme.uploader_id && (
-                                <button
-                                    onClick={handleFollow}
-                                    className={`px-4 py-2 rounded-full font-bold text-sm transition-colors flex items-center gap-2 ${isFollowing
-                                            ? "bg-gray-200 dark:bg-gray-800 text-black dark:text-white"
+                                {user?.uid !== meme.uploader_id && (
+                                    <button
+                                        onClick={handleFollow}
+                                        className={`px-5 py-2.5 rounded-full font-bold text-sm transition-all flex items-center gap-2 shadow-lg hover:scale-105 ${isFollowing
+                                            ? "bg-gray-200 dark:bg-gray-800 text-black dark:text-white hover:bg-gray-300 dark:hover:bg-gray-700"
                                             : "bg-yellow-400 text-black hover:bg-yellow-500"
-                                        }`}
-                                >
-                                    {isFollowing ? <UserCheck size={16} /> : <UserPlus size={16} />}
-                                    {isFollowing ? "Following" : "Follow"}
-                                </button>
-                            )}
+                                            }`}
+                                    >
+                                        {isFollowing ? <UserCheck size={16} /> : <UserPlus size={16} />}
+                                        {isFollowing ? "Following" : "Follow"}
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         {/* Description */}
                         {meme.description && (
-                            <div className="pt-4">
-                                <p className="text-gray-700 dark:text-gray-300">{meme.description}</p>
+                            <div className="p-6 border-b border-gray-100 dark:border-gray-800">
+                                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{meme.description}</p>
                             </div>
                         )}
 
                         {/* Tags */}
-                        <div className="flex flex-wrap gap-2">
-                            <span className="px-3 py-1 rounded-full bg-gray-100 dark:bg-[#222] text-xs font-bold">{meme.category}</span>
-                            <span className="px-3 py-1 rounded-full bg-gray-100 dark:bg-[#222] text-xs font-bold">{meme.language}</span>
-                            {meme.tags?.map(tag => (
-                                <span key={tag} className="px-3 py-1 rounded-full bg-yellow-400/20 text-yellow-600 dark:text-yellow-400 text-xs font-bold">
-                                    #{tag}
+                        <div className="p-6 border-b border-gray-100 dark:border-gray-800">
+                            <div className="flex flex-wrap gap-2">
+                                <span className="px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-xs font-bold">
+                                    {meme.language}
                                 </span>
-                            ))}
+                                {meme.tags?.map(tag => (
+                                    <span key={tag} className="px-3 py-1.5 rounded-full bg-yellow-400/10 text-yellow-600 dark:text-yellow-400 text-xs font-bold">
+                                        #{tag}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
 
                         {/* Actions */}
-                        <div className="flex gap-3 pt-4">
-                            <button
-                                onClick={handleReaction}
-                                className={`flex-1 py-3 rounded-xl font-bold transition-colors ${meme.reactedBy?.includes(user?.uid)
-                                        ? "bg-yellow-400 text-black"
-                                        : "bg-gray-100 dark:bg-[#222] hover:bg-gray-200 dark:hover:bg-[#333]"
-                                    }`}
-                            >
-                                😂 {meme.reactedBy?.includes(user?.uid) ? "Reacted" : "React"}
-                            </button>
+                        <div className="p-6">
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={handleReaction}
+                                    className={`py-3.5 rounded-xl font-bold text-sm transition-all hover:scale-105 shadow-lg flex items-center justify-center gap-2 ${meme.reactedBy?.includes(user?.uid)
+                                        ? "bg-gradient-to-r from-yellow-400 to-yellow-500 text-black"
+                                        : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+                                        }`}
+                                >
+                                    <Smile size={18} />
+                                    {meme.reactedBy?.includes(user?.uid) ? "Reacted" : "React"} ({meme.reactions?.haha || 0})
+                                </button>
 
-                            <button
-                                onClick={handleDownload}
-                                disabled={!downloadUnlocked}
-                                className={`flex-1 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 ${!downloadUnlocked
+                                <button
+                                    onClick={handleDownload}
+                                    disabled={!downloadUnlocked}
+                                    className={`py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg flex items-center justify-center gap-2 ${!downloadUnlocked
                                         ? "bg-gray-200 dark:bg-gray-800 cursor-not-allowed text-gray-500"
-                                        : "bg-yellow-400 text-black hover:bg-yellow-500"
-                                    }`}
-                            >
-                                {!downloadUnlocked ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />
-                                        Wait {downloadTimer}s
-                                    </>
-                                ) : (
-                                    <>
-                                        <Download size={18} />
-                                        Download
-                                    </>
-                                )}
-                            </button>
+                                        : "bg-gradient-to-r from-green-400 to-green-500 text-white hover:scale-105"
+                                        }`}
+                                >
+                                    {!downloadUnlocked ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />
+                                            Wait {downloadTimer}s
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Download size={18} />
+                                            Download
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
 
                     {/* Comments Section */}
-                    <div className="bg-white dark:bg-[#1a1a1a] rounded-xl p-6 space-y-4">
+                    <div className="bg-white dark:bg-[#0a0a0a] rounded-2xl border border-gray-100 dark:border-gray-800 p-6 space-y-6">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-bold flex items-center gap-2">
-                                <MessageCircle size={20} />
-                                Comments ({comments.length})
+                            <h3 className="text-xl font-black flex items-center gap-2">
+                                <MessageCircle size={22} className="text-blue-500" />
+                                Comments <span className="text-sm font-normal text-gray-500">({comments.length})</span>
                             </h3>
 
                             <select
                                 value={commentSort}
                                 onChange={(e) => setCommentSort(e.target.value)}
-                                className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-[#222] text-sm border-none outline-none"
+                                className="px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm border-none outline-none focus:ring-2 focus:ring-yellow-400"
                             >
                                 <option value="newest">Newest</option>
                                 <option value="oldest">Oldest</option>
@@ -517,7 +549,7 @@ export default function MemePage() {
                         {/* Add Comment */}
                         {user ? (
                             <div className="flex gap-3">
-                                <img src={user.photoURL || "https://ui-avatars.com/api/?name=User"} alt={user.displayName} className="w-10 h-10 rounded-full" />
+                                <img src={user.photoURL || "https://ui-avatars.com/api/?name=User"} alt={user.displayName} className="w-10 h-10 rounded-full flex-shrink-0 ring-2 ring-gray-200 dark:ring-gray-700" />
                                 <div className="flex-1 flex gap-2">
                                     <input
                                         type="text"
@@ -525,22 +557,22 @@ export default function MemePage() {
                                         value={newComment}
                                         onChange={(e) => setNewComment(e.target.value)}
                                         onKeyPress={(e) => e.key === "Enter" && handleAddComment()}
-                                        className="flex-1 px-4 py-2 rounded-full bg-gray-100 dark:bg-[#222] outline-none focus:ring-2 focus:ring-yellow-400"
+                                        className="flex-1 px-4 py-3 rounded-full bg-gray-100 dark:bg-gray-800 outline-none focus:ring-2 focus:ring-yellow-400 transition-all"
                                     />
                                     <button
                                         onClick={handleAddComment}
-                                        className="p-2 rounded-full bg-yellow-400 text-black hover:bg-yellow-500 transition-colors"
+                                        className="p-3 rounded-full bg-yellow-400 text-black hover:bg-yellow-500 transition-all hover:scale-110 shadow-lg"
                                     >
                                         <Send size={18} />
                                     </button>
                                 </div>
                             </div>
                         ) : (
-                            <div className="text-center py-8">
+                            <div className="text-center py-8 bg-gray-50 dark:bg-gray-900 rounded-xl">
                                 <p className="text-gray-500 mb-4">Please login to comment</p>
                                 <button
                                     onClick={googleLogin}
-                                    className="px-6 py-2 bg-yellow-400 text-black rounded-full font-bold hover:bg-yellow-500 transition-colors"
+                                    className="px-6 py-3 bg-yellow-400 text-black rounded-full font-bold hover:bg-yellow-500 transition-all hover:scale-105 shadow-lg"
                                 >
                                     Login with Google
                                 </button>
@@ -550,15 +582,15 @@ export default function MemePage() {
                         {/* Comments List */}
                         <div className="space-y-4 mt-6">
                             {sortedComments.map(comment => (
-                                <div key={comment.id} className="flex gap-3">
-                                    <img src={comment.userPic || "https://ui-avatars.com/api/?name=User"} alt={comment.userName} className="w-10 h-10 rounded-full flex-shrink-0" />
+                                <div key={comment.id} className="flex gap-3 group">
+                                    <img src={comment.userPic || "https://ui-avatars.com/api/?name=User"} alt={comment.userName} className="w-10 h-10 rounded-full flex-shrink-0 ring-2 ring-gray-200 dark:ring-gray-700" />
                                     <div className="flex-1">
-                                        <div className="bg-gray-100 dark:bg-[#222] rounded-2xl px-4 py-3">
-                                            <p className="font-bold text-sm">{comment.userName}</p>
-                                            <p className="text-sm mt-1">{comment.text}</p>
+                                        <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl px-4 py-3 group-hover:bg-gray-100 dark:group-hover:bg-gray-800 transition-colors">
+                                            <p className="font-bold text-sm mb-1">{comment.userName}</p>
+                                            <p className="text-sm leading-relaxed">{comment.text}</p>
                                         </div>
                                         <div className="flex items-center gap-4 mt-2 px-4 text-xs text-gray-500">
-                                            <button className="hover:text-yellow-500 transition-colors flex items-center gap-1">
+                                            <button className="hover:text-yellow-500 transition-colors flex items-center gap-1 font-medium">
                                                 <ThumbsUp size={12} />
                                                 {comment.likes || 0}
                                             </button>
@@ -566,7 +598,7 @@ export default function MemePage() {
                                             {user?.uid === comment.userId && (
                                                 <button
                                                     onClick={() => handleDeleteComment(comment.id)}
-                                                    className="hover:text-red-500 transition-colors flex items-center gap-1"
+                                                    className="hover:text-red-500 transition-colors flex items-center gap-1 font-medium"
                                                 >
                                                     <Trash2 size={12} />
                                                     Delete
@@ -576,44 +608,66 @@ export default function MemePage() {
                                     </div>
                                 </div>
                             ))}
+                            {comments.length === 0 && (
+                                <div className="text-center py-12 text-gray-400">
+                                    <MessageCircle size={48} className="mx-auto mb-3 opacity-50" />
+                                    <p className="text-sm">No comments yet. Be the first to comment!</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
 
                 {/* Sidebar - Right 1/3 */}
-                <div className="lg:col-span-1 space-y-4">
-                    <div className="bg-white dark:bg-[#1a1a1a] rounded-xl p-4 sticky top-20">
-                        <h3 className="font-bold mb-4">Related Memes</h3>
+                <div className="lg:col-span-1">
+                    <div className="bg-white dark:bg-[#0a0a0a] rounded-2xl border border-gray-100 dark:border-gray-800 p-5 sticky top-20">
+                        <h3 className="font-black text-lg mb-4 flex items-center gap-2">
+                            <Play size={20} className="text-yellow-500" />
+                            Related Memes
+                        </h3>
                         <div className="space-y-3">
                             {relatedMemes.map(relatedMeme => (
                                 <Link
                                     key={relatedMeme.id}
                                     href={`/meme/${relatedMeme.id}`}
-                                    className="flex gap-3 hover:bg-gray-50 dark:hover:bg-[#222] rounded-lg p-2 transition-colors"
+                                    className="flex gap-3 hover:bg-gray-50 dark:hover:bg-gray-900 rounded-xl p-2 transition-all hover:scale-[1.02] group"
                                 >
-                                    <div className="w-32 h-20 bg-black rounded-lg overflow-hidden flex-shrink-0 relative">
+                                    <div className="w-28 h-20 bg-black rounded-lg overflow-hidden flex-shrink-0 relative">
                                         {relatedMeme.thumbnail_url ? (
-                                            <img src={relatedMeme.thumbnail_url} alt={relatedMeme.title} className="w-full h-full object-cover" />
+                                            <img src={relatedMeme.thumbnail_url} alt={relatedMeme.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                                        ) : relatedMeme.media_type === "video" || relatedMeme.file_url.endsWith(".mp4") ? (
+                                            <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                                                <Play size={24} className="text-white opacity-75" />
+                                            </div>
+                                        ) : relatedMeme.media_type === "audio" || relatedMeme.media_type === "raw" ? (
+                                            <div className="w-full h-full bg-gradient-to-br from-purple-900 to-black flex items-center justify-center">
+                                                <Music size={24} className="text-yellow-400" />
+                                            </div>
                                         ) : (
-                                            <img src={relatedMeme.file_url} alt={relatedMeme.title} className="w-full h-full object-cover" />
+                                            <img src={relatedMeme.file_url} alt={relatedMeme.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                                         )}
                                         {(relatedMeme.media_type === "video" || relatedMeme.file_url.endsWith(".mp4")) && (
                                             <div className="absolute inset-0 flex items-center justify-center">
-                                                <div className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center">
-                                                    <Play size={16} className="text-white ml-0.5" fill="currentColor" />
+                                                <div className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center group-hover:bg-yellow-400 group-hover:text-black transition-all">
+                                                    <Play size={14} className="ml-0.5" fill="currentColor" />
                                                 </div>
                                             </div>
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-sm line-clamp-2">{relatedMeme.title}</p>
-                                        <p className="text-xs text-gray-500 mt-1">{relatedMeme.uploader_name}</p>
-                                        <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
+                                        <p className="font-semibold text-sm line-clamp-2 mb-1 group-hover:text-yellow-500 transition-colors">{relatedMeme.title}</p>
+                                        <p className="text-xs text-gray-500 mb-1">{relatedMeme.uploader_name}</p>
+                                        <div className="flex items-center gap-2 text-xs text-gray-400">
                                             <span className="flex items-center gap-1"><Eye size={10} /> {relatedMeme.views || 0}</span>
                                         </div>
                                     </div>
                                 </Link>
                             ))}
+                            {relatedMemes.length === 0 && (
+                                <div className="text-center py-8 text-gray-400">
+                                    <p className="text-sm">No related memes found</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
