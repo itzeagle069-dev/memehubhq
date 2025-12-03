@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { TrendingUp, Smile, Video, Music, Sparkles, Download, Share2, Clock, Eye, X, Play, Trash2, MoreVertical, Edit2, Plus, Check, ShieldAlert, Star } from "lucide-react";
+import { TrendingUp, Smile, Video, Music, Sparkles, Download, Share2, Clock, Eye, X, Play, Trash2, MoreVertical, Edit2, Plus, Check, ShieldAlert, Star, ListPlus } from "lucide-react";
 import { useEffect, useState, Suspense, useRef, useCallback, Fragment } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, limit, getDocs, updateDoc, doc, increment, arrayUnion, arrayRemove, deleteDoc, setDoc, getDoc, orderBy, startAfter } from "firebase/firestore";
@@ -1083,6 +1083,22 @@ function HomeContent() {
                                                         title="Favorite"
                                                     >
                                                         <Star size={13} fill={userFavorites.includes(item.data.id) ? "currentColor" : "none"} />
+                                                    </button>
+
+                                                    {/* Add to Downloads Button */}
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (isInDownloadList(item.data.id)) {
+                                                                removeFromDownloadList(item.data.id);
+                                                            } else {
+                                                                addToDownloadList(item.data);
+                                                            }
+                                                        }}
+                                                        className={`p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isInDownloadList(item.data.id) ? "text-blue-500" : "text-gray-400 hover:text-blue-500"}`}
+                                                        title={isInDownloadList(item.data.id) ? "Remove from downloads" : "Add to downloads"}
+                                                    >
+                                                        <ListPlus size={13} fill={isInDownloadList(item.data.id) ? "currentColor" : "none"} />
                                                     </button>
                                                 </div>
                                             </div>
