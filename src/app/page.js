@@ -1036,62 +1036,88 @@ function HomeContent() {
                                             {/* Title - 2 lines max */}
                                             <h3 className="font-semibold text-xs leading-tight line-clamp-2 text-black dark:text-white">{item.data.title}</h3>
 
-                                            {/* Username + Stats + Share/Favorite */}
+                                            {/* Username + Counts */}
                                             <div className="flex items-center justify-between gap-2">
-                                                {/* Left: Username + View/Download counts */}
-                                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                                    <Link
-                                                        href={`/user/${item.data.uploader_id}`}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="flex items-center gap-1.5 hover:opacity-70 transition-opacity min-w-0"
-                                                    >
-                                                        <img src={item.data.uploader_pic || "https://ui-avatars.com/api/?name=User"} alt={item.data.uploader_name || "User"} className="w-4 h-4 rounded-full flex-shrink-0" />
-                                                        <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate hover:text-yellow-500 transition-colors">{item.data.uploader_name}</span>
-                                                    </Link>
+                                                <Link
+                                                    href={`/user/${item.data.uploader_id}`}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="flex items-center gap-1.5 hover:opacity-70 transition-opacity min-w-0 flex-1"
+                                                >
+                                                    <img src={item.data.uploader_pic || "https://ui-avatars.com/api/?name=User"} alt={item.data.uploader_name || "User"} className="w-4 h-4 rounded-full flex-shrink-0" />
+                                                    <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate hover:text-yellow-500 transition-colors">{item.data.uploader_name}</span>
+                                                </Link>
 
-                                                    {/* Stats */}
-                                                    <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-medium flex-shrink-0">
-                                                        <span className="flex items-center gap-0.5"><Eye size={10} /> {item.data.views || 0}</span>
-                                                        <span className="flex items-center gap-0.5"><Download size={10} /> {item.data.downloads || 0}</span>
-                                                    </div>
+                                                {/* Counts (Reaction + Download) */}
+                                                <div className="flex items-center gap-2 text-[10px] text-gray-400 font-medium flex-shrink-0">
+                                                    <span className="flex items-center gap-0.5">😂 {item.data.reactions?.haha || 0}</span>
+                                                    <span className="flex items-center gap-0.5"><Download size={10} /> {item.data.downloads || 0}</span>
                                                 </div>
+                                            </div>
 
-                                                {/* Right: Share + Favorite */}
-                                                <div className="flex items-center gap-0.5 flex-shrink-0">
-                                                    {/* Share Button */}
+                                            {/* Bottom Row: Actions */}
+                                            <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800 gap-2 overflow-x-auto no-scrollbar">
+                                                {/* Reaction Button */}
+                                                <button
+                                                    onClick={(e) => handleReaction(e, item.data)}
+                                                    className={`flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-full transition-colors text-[10px] font-bold ${item.data.reactedBy?.includes(user?.uid)
+                                                        ? "bg-yellow-400 text-black"
+                                                        : "bg-yellow-50 dark:bg-yellow-400/10 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-400/20"
+                                                        }`}
+                                                >
+                                                    😂
+                                                </button>
+
+                                                <div className="flex items-center gap-1 flex-shrink-0">
+                                                    {/* Download Button */}
                                                     <button
-                                                        onClick={(e) => handleShare(e, item.data)}
-                                                        className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                                                        title="Share"
+                                                        onClick={(e) => handleDownload(e, item.data.id, item.data.file_url, item.data.title)}
+                                                        className="px-2 py-1 rounded-lg bg-yellow-400 text-black text-[10px] font-bold hover:bg-yellow-500 transition-colors flex items-center gap-1"
+                                                        title="Download now"
                                                     >
-                                                        <Share2 size={13} />
+                                                        Download
+                                                    </button>
+
+                                                    {/* Add to Downloads (Checkbox) */}
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (isInDownloadList(item.data.id)) {
+                                                                removeFromDownloadList(item.data.id);
+                                                            } else {
+                                                                addToDownloadList(item.data);
+                                                            }
+                                                        }}
+                                                        className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-blue-500 transition-colors relative"
+                                                        title={isInDownloadList(item.data.id) ? "Added to downloads" : "Add to downloads"}
+                                                    >
+                                                        {isInDownloadList(item.data.id) ? (
+                                                            <div className="relative">
+                                                                <Square size={16} className="text-blue-500" />
+                                                                <Download size={10} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-blue-500" />
+                                                            </div>
+                                                        ) : (
+                                                            <Square size={16} />
+                                                        )}
                                                     </button>
 
                                                     {/* Favorite Button */}
                                                     <button
                                                         onClick={(e) => handleFavorite(e, item.data)}
-                                                        className={`p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${userFavorites.includes(item.data.id) ? "text-yellow-400" : "text-gray-400 hover:text-yellow-500"}`}
+                                                        className={`p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${userFavorites.includes(item.data.id) ? "text-yellow-400" : "text-gray-400 hover:text-yellow-500"}`}
                                                         title="Favorite"
                                                     >
-                                                        <Star size={13} fill={userFavorites.includes(item.data.id) ? "currentColor" : "none"} />
+                                                        <Star size={14} fill={userFavorites.includes(item.data.id) ? "currentColor" : "none"} />
                                                     </button>
-                                                </div>
-                                            </div>
 
-                                            {/* Bottom Row: Reaction + Download Button */}
-                                            <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800">
-                                                {/* Reaction Button */}
-                                                <button
-                                                    onClick={(e) => handleReaction(e, item.data)}
-                                                    className={`flex items-center gap-1 px-2 py-1 rounded-full transition-colors text-[10px] font-bold ${item.data.reactedBy?.includes(user?.uid)
-                                                        ? "bg-yellow-400 text-black"
-                                                        : "bg-yellow-50 dark:bg-yellow-400/10 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-400/20"
-                                                        }`}
-                                                >
-                                                    {item.data.reactions?.haha || 0} 😂
-                                                </button>
+                                                    {/* Share Button */}
+                                                    <button
+                                                        onClick={(e) => handleShare(e, item.data)}
+                                                        className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                                        title="Share"
+                                                    >
+                                                        <Share2 size={14} />
+                                                    </button>
 
-                                                <div className="flex items-center gap-1">
                                                     {/* Menu */}
                                                     {(canDelete(item.data) || ADMIN_IDS.includes(user?.uid)) && (
                                                         <div className="relative">
@@ -1102,7 +1128,7 @@ function HomeContent() {
                                                                 }}
                                                                 className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 transition-colors"
                                                             >
-                                                                <MoreVertical size={13} />
+                                                                <MoreVertical size={14} />
                                                             </button>
                                                             {openMenuId === item.data.id && (
                                                                 <div className="absolute right-0 top-full mt-1 w-24 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
@@ -1131,44 +1157,9 @@ function HomeContent() {
                                                             )}
                                                         </div>
                                                     )}
-
-                                                    {/* Add to Downloads Button - Checkbox only */}
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            if (isInDownloadList(item.data.id)) {
-                                                                removeFromDownloadList(item.data.id);
-                                                            } else {
-                                                                addToDownloadList(item.data);
-                                                            }
-                                                        }}
-                                                        className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-blue-500 transition-colors relative"
-                                                        title={isInDownloadList(item.data.id) ? "Added to downloads" : "Add to downloads"}
-                                                    >
-                                                        {isInDownloadList(item.data.id) ? (
-                                                            <div className="relative">
-                                                                <Square size={16} className="text-blue-500" />
-                                                                <Download size={10} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-blue-500" />
-                                                            </div>
-                                                        ) : (
-                                                            <Square size={16} />
-                                                        )}
-                                                    </button>
-
-                                                    {/* Download Button */}
-                                                    <button
-                                                        onClick={(e) => handleDownload(e, item.data.id, item.data.file_url, item.data.title)}
-                                                        className="px-3 py-1.5 rounded-lg bg-yellow-400 text-black text-xs font-bold hover:bg-yellow-500 transition-colors flex items-center gap-1"
-                                                        title="Download now"
-                                                    >
-                                                        <Download size={12} />
-                                                        Download
-                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-
                                 </Fragment>
                             )
                         ))}
