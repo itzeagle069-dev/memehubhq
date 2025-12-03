@@ -429,7 +429,7 @@ function HomeContent() {
 
             if (sortBy === "oldest") { sortDir = "asc"; }
             else if (sortBy === "popular") { sortField = "views"; sortDir = "desc"; }
-            else if (sortBy === "a_z") { sortField = "title"; sortDir = "asc"; }
+            else if (sortBy === "a_z") { sortField = "title_lowercase"; sortDir = "asc"; }
             else if (sortBy === "downloads") { sortField = "downloads"; sortDir = "desc"; }
             else if (sortBy === "reacted") { sortField = "reactions.haha"; sortDir = "desc"; }
 
@@ -528,28 +528,7 @@ function HomeContent() {
     }, [lastVisible, hasMore, loadingMore, sortBy, activeCategory, paramCategory, paramLanguage, paramType, paramDate, searchQuery]);
 
     // Intersection Observer for automatic infinite scroll
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) => {
-                const [entry] = entries;
-                if (entry.isIntersecting && hasMore && !loadingMore && !loading) {
-                    loadMoreMemes();
-                }
-            },
-            { threshold: 0.1 }
-        );
-
-        const currentRef = loadMoreRef.current;
-        if (currentRef) {
-            observer.observe(currentRef);
-        }
-
-        return () => {
-            if (currentRef) {
-                observer.unobserve(currentRef);
-            }
-        };
-    }, [hasMore, loadingMore, loading, loadMoreMemes]);
+    // Intersection Observer removed for manual load more
 
 
     // Handle Reaction
@@ -994,7 +973,7 @@ function HomeContent() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                         {displayItems.map((item, idx) => (
                             item.type === 'ad' ? (
-                                <div key={item.id} className="bg-gray-100 dark:bg-[#1a1a1a] rounded-xl overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center min-h-[320px]">
+                                <div key={item.id} className="bg-gray-100 dark:bg-[#1a1a1a] rounded-2xl overflow-hidden border border-gray-100 dark:border-[#252525] flex items-center justify-center h-full min-h-[300px]">
                                     <AdUnit type="native" />
                                 </div>
                             ) : (
@@ -1166,11 +1145,11 @@ function HomeContent() {
                                                     >
                                                         {isInDownloadList(item.data.id) ? (
                                                             <div className="relative">
-                                                                <Square size={13} className="text-blue-500" />
-                                                                <Download size={8} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-blue-500" />
+                                                                <Square size={16} className="text-blue-500" />
+                                                                <Download size={10} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-blue-500" />
                                                             </div>
                                                         ) : (
-                                                            <Square size={13} />
+                                                            <Square size={16} />
                                                         )}
                                                     </button>
 
