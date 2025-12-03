@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { TrendingUp, Smile, Video, Music, Sparkles, Download, Share2, Clock, Eye, X, Play, Trash2, MoreVertical, Edit2, Plus, Check, ShieldAlert, Star, ListPlus } from "lucide-react";
+import { TrendingUp, Smile, Video, Music, Sparkles, Download, Share2, Clock, Eye, X, Play, Trash2, MoreVertical, Edit2, Plus, Check, ShieldAlert, Star, ListPlus, CheckSquare, Square } from "lucide-react";
 import { useEffect, useState, Suspense, useRef, useCallback, Fragment } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, limit, getDocs, updateDoc, doc, increment, arrayUnion, arrayRemove, deleteDoc, setDoc, getDoc, orderBy, startAfter } from "firebase/firestore";
@@ -1151,7 +1151,7 @@ function HomeContent() {
                                                         </div>
                                                     )}
 
-                                                    {/* Add to Downloads Button with text */}
+                                                    {/* Add to Downloads Button with checkbox */}
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
@@ -1167,8 +1167,17 @@ function HomeContent() {
                                                             }`}
                                                         title={isInDownloadList(item.data.id) ? "Remove from downloads" : "Add to downloads"}
                                                     >
-                                                        <Download size={11} />
-                                                        {isInDownloadList(item.data.id) ? "Added" : "Download"}
+                                                        {isInDownloadList(item.data.id) ? (
+                                                            <>
+                                                                <CheckSquare size={11} />
+                                                                Added
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Square size={11} />
+                                                                Add to Download
+                                                            </>
+                                                        )}
                                                     </button>
 
                                                     {/* Download Button */}
