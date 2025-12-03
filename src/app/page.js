@@ -304,7 +304,7 @@ function HomeContent() {
             setHasMore(true);
 
             try {
-                const ITEMS_PER_PAGE = 30;
+                const ITEMS_PER_PAGE = 28;
 
                 // Determine Sort Field and Direction
                 let sortField = "createdAt";
@@ -423,7 +423,7 @@ function HomeContent() {
 
         setLoadingMore(true);
         try {
-            const ITEMS_PER_PAGE = 30;
+            const ITEMS_PER_PAGE = 28;
 
             // Determine Sort Field and Direction
             let sortField = "createdAt";
