@@ -846,27 +846,31 @@ export default function AdminPage() {
                 </div>
             )}
 
+            
             {/* Edit Modal */}
-                        {editingMeme && (
+            {editingMeme && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                     <div className="bg-white dark:bg-[#1f1f1f] w-full max-w-6xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
                         <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-[#1f1f1f] z-10">
                             <h3 className="text-xl font-black">Edit Meme</h3>
-                            <button onClick={() => setEditingMeme(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+                            <button
+                                onClick={() => setEditingMeme(null)}
+                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                            >
                                 <X size={20} />
                             </button>
                         </div>
 
                         <div className="flex-1 overflow-y-auto">
-                            <div className="grid grid-cols-1 md:grid-cols-2 h-full">
-                                {/* LEFT COLUMN: Media Preview */}
-                                <div className="bg-black flex items-center justify-center p-8 min-h-[300px] md:min-h-full relative">
+                            <div className="flex flex-col lg:flex-row h-full">
+                                {/* LEFT: Media Preview */}
+                                <div className="lg:w-1/2 bg-black flex items-center justify-center p-8 relative min-h-[300px] lg:min-h-full">
                                     {editingMeme.media_type === "video" || editingMeme.file_url.endsWith(".mp4") ? (
-                                        <video src={editingMeme.file_url} controls className="max-w-full max-h-[60vh] rounded-lg shadow-2xl" />
+                                        <video src={editingMeme.file_url} controls className="max-w-full max-h-[500px] rounded-lg shadow-2xl" />
                                     ) : editingMeme.media_type === "audio" || editingMeme.media_type === "raw" ? (
                                         <div className="text-center">
-                                            {editForm.thumbnail_url || editingMeme.thumbnail_url ? (
-                                                <img src={editForm.thumbnail_url || editingMeme.thumbnail_url} className="max-w-xs max-h-64 mx-auto mb-6 rounded-lg shadow-2xl object-cover" />
+                                            {editingMeme.thumbnail_url ? (
+                                                <img src={editingMeme.thumbnail_url} className="max-w-xs max-h-64 mx-auto mb-6 rounded-lg shadow-2xl object-cover" />
                                             ) : (
                                                 <div className="w-48 h-48 bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-6">
                                                     <Music className="w-20 h-20 text-yellow-400" />
@@ -875,12 +879,12 @@ export default function AdminPage() {
                                             <audio src={editingMeme.file_url} controls className="w-full max-w-md" />
                                         </div>
                                     ) : (
-                                        <img src={editingMeme.file_url} className="max-w-full max-h-[60vh] rounded-lg shadow-2xl object-contain" />
+                                        <img src={editingMeme.file_url} className="max-w-full max-h-[500px] object-contain rounded-lg shadow-2xl" />
                                     )}
                                 </div>
 
-                                {/* RIGHT COLUMN: Edit Form */}
-                                <div className="p-6 space-y-6 bg-white dark:bg-[#1f1f1f]">
+                                {/* RIGHT: Edit Form */}
+                                <div className="lg:w-1/2 p-6 lg:p-8 space-y-6 bg-white dark:bg-[#1f1f1f]">
                                     {/* Title */}
                                     <div>
                                         <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Title</label>
@@ -888,119 +892,81 @@ export default function AdminPage() {
                                             type="text"
                                             value={editForm.title || ""}
                                             onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                                            className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400"
+                                            className="w-full p-4 rounded-xl bg-gray-50 dark:bg-[#2a2a2a] font-bold text-lg outline-none focus:ring-2 focus:ring-yellow-400 transition-all"
+                                            placeholder="Enter meme title..."
                                         />
                                     </div>
 
-                                    {/* Category */}
-                                    <div>
-                                        <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Category</label>
-                                        <select
-                                            value={editForm.category || ""}
-                                            onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                                            className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400 mb-2"
-                                        >
-                                            {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                                        </select>
-
-                                        {/* Category Management */}
-                                        <div className="flex flex-wrap gap-2 mb-2">
-                                            {categories.map(cat => (
-                                                <div key={cat} className="flex items-center gap-1 bg-gray-200 dark:bg-[#333] px-2 py-1 rounded text-xs">
-                                                    <span className="text-black dark:text-white">{cat}</span>
-                                                    <button type="button" onClick={() => deleteCategory(cat)} className="text-red-500 hover:text-red-700">
-                                                        <X size={12} />
-                                                    </button>
-                                                </div>
-                                            ))}
+                                    {/* Category & Language */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Category</label>
+                                            <div className="relative">
+                                                <select
+                                                    value={editForm.category || ""}
+                                                    onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                                                    className="w-full p-3 rounded-xl bg-gray-50 dark:bg-[#2a2a2a] appearance-none outline-none focus:ring-2 focus:ring-yellow-400 font-medium"
+                                                >
+                                                    {categories.map(cat => (
+                                                        <option key={cat} value={cat}>{cat}</option>
+                                                    ))}
+                                                </select>
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
+                                            </div>
                                         </div>
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                placeholder="Add new category..."
-                                                value={newCategory}
-                                                onChange={(e) => setNewCategory(e.target.value)}
-                                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCategory())}
-                                                className="flex-1 p-2 text-sm rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={addCategory}
-                                                disabled={isAddingCategory}
-                                                className="px-3 py-2 bg-yellow-400 text-black rounded-lg font-bold text-sm hover:bg-yellow-500 disabled:opacity-50"
-                                            >
-                                                <Plus size={14} />
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Language */}
-                                    <div>
-                                        <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Language</label>
-                                        <select
-                                            value={editForm.language || ""}
-                                            onChange={(e) => setEditForm({ ...editForm, language: e.target.value })}
-                                            className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400 mb-2"
-                                        >
-                                            {languages.map(lang => <option key={lang} value={lang}>{lang}</option>)}
-                                        </select>
-
-                                        {/* Language Management */}
-                                        <div className="flex flex-wrap gap-2 mb-2">
-                                            {languages.map(lang => (
-                                                <div key={lang} className="flex items-center gap-1 bg-gray-200 dark:bg-[#333] px-2 py-1 rounded text-xs">
-                                                    <span className="text-black dark:text-white">{lang}</span>
-                                                    <button type="button" onClick={() => deleteLanguage(lang)} className="text-red-500 hover:text-red-700">
-                                                        <X size={12} />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                placeholder="Add new language..."
-                                                value={newLanguage}
-                                                onChange={(e) => setNewLanguage(e.target.value)}
-                                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addLanguage())}
-                                                className="flex-1 p-2 text-sm rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={addLanguage}
-                                                disabled={isAddingLanguage}
-                                                className="px-3 py-2 bg-yellow-400 text-black rounded-lg font-bold text-sm hover:bg-yellow-500 disabled:opacity-50"
-                                            >
-                                                <Plus size={14} />
-                                            </button>
+                                        <div>
+                                            <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Language</label>
+                                            <div className="relative">
+                                                <select
+                                                    value={editForm.language || ""}
+                                                    onChange={(e) => setEditForm({ ...editForm, language: e.target.value })}
+                                                    className="w-full p-3 rounded-xl bg-gray-50 dark:bg-[#2a2a2a] appearance-none outline-none focus:ring-2 focus:ring-yellow-400 font-medium"
+                                                >
+                                                    {languages.map(lang => (
+                                                        <option key={lang} value={lang}>{lang}</option>
+                                                    ))}
+                                                </select>
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
+                                            </div>
                                         </div>
                                     </div>
 
                                     {/* Credit */}
                                     <div>
-                                        <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Credit / Source (Optional)</label>
+                                        <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Credit / Source</label>
                                         <input
                                             type="text"
                                             value={editForm.credit || ""}
                                             onChange={(e) => setEditForm({ ...editForm, credit: e.target.value })}
                                             placeholder="Original creator or source..."
-                                            className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400"
+                                            className="w-full p-3 rounded-xl bg-gray-50 dark:bg-[#2a2a2a] outline-none focus:ring-2 focus:ring-yellow-400"
                                         />
                                     </div>
 
                                     {/* Thumbnail Upload */}
                                     {(editingMeme.media_type === "audio" || editingMeme.media_type === "video" || editingMeme.media_type === "raw") && (
                                         <div>
-                                            <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Change Thumbnail</label>
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={handleThumbnailChange}
-                                                className="w-full text-sm text-gray-500"
-                                            />
-                                            {thumbnailPreview && (
-                                                <img src={thumbnailPreview} className="mt-2 h-20 rounded-lg object-cover border border-yellow-400" />
-                                            )}
+                                            <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Custom Thumbnail</label>
+                                            <div className="flex items-center gap-4">
+                                                {thumbnailPreview || editForm.thumbnail_url ? (
+                                                    <img src={thumbnailPreview || editForm.thumbnail_url} className="w-20 h-20 rounded-lg object-cover bg-gray-100" />
+                                                ) : (
+                                                    <div className="w-20 h-20 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] flex items-center justify-center text-gray-400">
+                                                        <Eye size={24} />
+                                                    </div>
+                                                )}
+                                                <label className="flex-1 cursor-pointer">
+                                                    <div className="px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl hover:border-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/10 transition-all text-center">
+                                                        <span className="text-sm font-bold text-gray-500">Click to upload new thumbnail</span>
+                                                    </div>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={handleThumbnailChange}
+                                                        className="hidden"
+                                                    />
+                                                </label>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -1010,171 +976,23 @@ export default function AdminPage() {
                         <div className="p-6 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 bg-white dark:bg-[#1f1f1f]">
                             <button
                                 onClick={() => setEditingMeme(null)}
-                                className="px-5 py-2.5 rounded-xl font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                className="px-6 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={saveEdits}
                                 disabled={saving}
-                                className="px-5 py-2.5 rounded-xl font-bold bg-yellow-400 text-black hover:bg-yellow-500 disabled:opacity-50"
+                                className="px-8 py-3 rounded-xl font-bold bg-yellow-400 text-black hover:bg-yellow-500 disabled:opacity-50 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
                             >
-                                {saving ? "Saving..." : "Save Changes"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        <div className="p-6 space-y-6">
-                            {/* Thumbnail Preview */}
-                            <div className="flex justify-center">
-                                {thumbnailPreview ? (
-                                    <img src={thumbnailPreview} className="h-32 rounded-lg object-cover border-2 border-yellow-400" />
-                                ) : editForm.thumbnail_url ? (
-                                    <img src={editForm.thumbnail_url} className="h-32 rounded-lg object-cover" />
+                                {saving ? (
+                                    <div className="flex items-center gap-2">
+                                        <Loader2 className="animate-spin" size={20} />
+                                        <span>Saving...</span>
+                                    </div>
                                 ) : (
-                                    <div className="h-32 w-32 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-gray-400">No Thumbnail</div>
+                                    "Save Changes"
                                 )}
-                            </div>
-
-                            {/* Title */}
-                            <div>
-                                <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Title</label>
-                                <input
-                                    type="text"
-                                    value={editForm.title || ""}
-                                    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                                    className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400"
-                                />
-                            </div>
-
-                            {/* Category */}
-                            <div>
-                                <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Category</label>
-                                <select
-                                    value={editForm.category || ""}
-                                    onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                                    className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400 mb-2"
-                                >
-                                    {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                                </select>
-
-                                {/* Category Management */}
-                                <div className="flex flex-wrap gap-2 mb-2">
-                                    {categories.map(cat => (
-                                        <div key={cat} className="flex items-center gap-1 bg-gray-200 dark:bg-[#333] px-2 py-1 rounded text-xs">
-                                            <span className="text-black dark:text-white">{cat}</span>
-                                            <button type="button" onClick={() => deleteCategory(cat)} className="text-red-500 hover:text-red-700">
-                                                <X size={12} />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        placeholder="Add new category..."
-                                        value={newCategory}
-                                        onChange={(e) => setNewCategory(e.target.value)}
-                                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCategory())}
-                                        className="flex-1 p-2 text-sm rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={addCategory}
-                                        disabled={isAddingCategory}
-                                        className="px-3 py-2 bg-yellow-400 text-black rounded-lg font-bold text-sm hover:bg-yellow-500 disabled:opacity-50"
-                                    >
-                                        <Plus size={14} />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Language */}
-                            <div>
-                                <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Language</label>
-                                <select
-                                    value={editForm.language || ""}
-                                    onChange={(e) => setEditForm({ ...editForm, language: e.target.value })}
-                                    className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400 mb-2"
-                                >
-                                    {languages.map(lang => <option key={lang} value={lang}>{lang}</option>)}
-                                </select>
-
-                                {/* Language Management */}
-                                <div className="flex flex-wrap gap-2 mb-2">
-                                    {languages.map(lang => (
-                                        <div key={lang} className="flex items-center gap-1 bg-gray-200 dark:bg-[#333] px-2 py-1 rounded text-xs">
-                                            <span className="text-black dark:text-white">{lang}</span>
-                                            <button type="button" onClick={() => deleteLanguage(lang)} className="text-red-500 hover:text-red-700">
-                                                <X size={12} />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        placeholder="Add new language..."
-                                        value={newLanguage}
-                                        onChange={(e) => setNewLanguage(e.target.value)}
-                                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addLanguage())}
-                                        className="flex-1 p-2 text-sm rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={addLanguage}
-                                        disabled={isAddingLanguage}
-                                        className="px-3 py-2 bg-yellow-400 text-black rounded-lg font-bold text-sm hover:bg-yellow-500 disabled:opacity-50"
-                                    >
-                                        <Plus size={14} />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Credit */}
-                            <div>
-                                <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Credit / Source (Optional)</label>
-                                <input
-                                    type="text"
-                                    value={editForm.credit || ""}
-                                    onChange={(e) => setEditForm({ ...editForm, credit: e.target.value })}
-                                    placeholder="Original creator or source..."
-                                    className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] dark:text-white outline-none focus:ring-2 focus:ring-yellow-400"
-                                />
-                            </div>
-
-                            {/* Thumbnail Upload */}
-                            {(editingMeme.media_type === "audio" || editingMeme.media_type === "video" || editingMeme.media_type === "raw") && (
-                                <div>
-                                    <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Change Thumbnail</label>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleThumbnailChange}
-                                        className="w-full text-sm text-gray-500"
-                                    />
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="p-6 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 sticky bottom-0 bg-white dark:bg-[#1f1f1f]">
-                            <button
-                                onClick={() => setEditingMeme(null)}
-                                className="px-5 py-2.5 rounded-xl font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={saveEdits}
-                                disabled={saving}
-                                className="px-5 py-2.5 rounded-xl font-bold bg-yellow-400 text-black hover:bg-yellow-500 disabled:opacity-50"
-                            >
-                                {saving ? "Saving..." : "Save Changes"}
                             </button>
                         </div>
                     </div>
