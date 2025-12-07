@@ -17,6 +17,7 @@ export default function AdminPage() {
     const router = useRouter();
     const [pendingMemes, setPendingMemes] = useState([]);
     const [reports, setReports] = useState([]);
+    const [requests, setRequests] = useState([]);
     const [activeTab, setActiveTab] = useState("memes");
     const [fetching, setFetching] = useState(true);
     const [editingMeme, setEditingMeme] = useState(null);
@@ -101,6 +102,10 @@ export default function AdminPage() {
                 const reportsQ = query(collection(db, "reports"), orderBy("createdAt", "desc"));
                 const reportsSnapshot = await getDocs(reportsQ);
                 setReports(reportsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+                const requestsQ = query(collection(db, "meme_requests"), orderBy("createdAt", "desc"));
+                const requestsSnapshot = await getDocs(requestsQ);
+                setRequests(requestsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
             } catch (err) {
                 console.error("Error fetching data:", err);
                 toast.error("Failed to load data");
@@ -397,6 +402,22 @@ export default function AdminPage() {
             setFetching(false);
         }
     };
+    const handleRequestUpdate = async (reqId, newStatus, replyText) => {
+        try {
+            await updateDoc(doc(db, "meme_requests", reqId), {
+                status: newStatus,
+                adminReply: replyText || null,
+                updatedAt: new Date().toISOString()
+            });
+
+            setRequests(prev => prev.map(r => r.id === reqId ? { ...r, status: newStatus, adminReply: replyText || null } : r));
+            toast.success(`Request marked as ${newStatus}`);
+        } catch (error) {
+            console.error("Error updating request:", error);
+            toast.error("Failed to update request");
+        }
+    };
+
     // Multi-select helper functions
     const handleSelectAll = () => {
         const allIds = publishedMemes.map(m => m.id);
@@ -495,6 +516,14 @@ export default function AdminPage() {
                     Manage Memes
                     <span className="ml-2 bg-gray-100 dark:bg-[#222] px-2 py-0.5 rounded-full text-xs">{publishedMemes.length}</span>
                     {activeTab === "manage" && <div className="absolute bottom-0 left-0 w-full h-1 bg-yellow-400 rounded-t-full" />}
+                </button>
+                <button
+                    onClick={() => setActiveTab("requests")}
+                    className={`pb-4 text-lg font-bold transition-colors relative ${activeTab === "requests" ? "text-yellow-400" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"}`}
+                >
+                    Requests
+                    <span className="ml-2 bg-gray-100 dark:bg-[#222] px-2 py-0.5 rounded-full text-xs">{requests.length}</span>
+                    {activeTab === "requests" && <div className="absolute bottom-0 left-0 w-full h-1 bg-yellow-400 rounded-t-full" />}
                 </button>
 
             </div>
@@ -780,224 +809,328 @@ export default function AdminPage() {
                 </>
             )}
 
+            {activeTab === "requests" && (
+                <div className="space-y-4">
+                    {requests.length === 0 ? (
+                        <div className="text-center py-20 bg-gray-50 dark:bg-[#111] rounded-3xl border border-gray-100 dark:border-[#222]">
+                            <h2 className="text-2xl font-bold text-gray-400">No requests found</h2>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 gap-4">
+                            {requests.map(req => (
+                                <RequestCard key={req.id} request={req} onUpdate={handleRequestUpdate} />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )
+            }
+
 
             {/* Preview Modal */}
-            {previewMeme && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-sm">
-                    <div className="relative w-full max-w-4xl bg-white dark:bg-[#1a1a1a] rounded-2xl overflow-hidden shadow-2xl">
-                        <button
-                            onClick={() => setPreviewMeme(null)}
-                            className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-white/20 transition-colors"
-                        >
-                            <X size={24} />
-                        </button>
-
-                        <div className="flex flex-col md:flex-row">
-                            <div className="flex-1 bg-black flex items-center justify-center p-8">
-                                {previewMeme.media_type === "video" || previewMeme.file_url.endsWith(".mp4") ? (
-                                    <video src={previewMeme.file_url} controls autoPlay className="max-w-full max-h-[70vh]" />
-                                ) : previewMeme.media_type === "raw" || previewMeme.media_type === "audio" ? (
-                                    <div className="text-center">
-                                        {previewMeme.thumbnail_url && <img src={previewMeme.thumbnail_url} className="max-w-md max-h-64 mx-auto mb-6 rounded-lg" />}
-                                        <Music className="w-24 h-24 text-yellow-400 mx-auto mb-6" />
-                                        <audio src={previewMeme.file_url} controls className="w-full" autoPlay />
-                                    </div>
-                                ) : (
-                                    <img src={previewMeme.file_url} className="max-w-full max-h-[70vh] object-contain" />
-                                )}
-                            </div>
-
-                            <div className="w-full md:w-80 p-6 space-y-4">
-                                <h2 className="text-2xl font-black text-black dark:text-white">{previewMeme.title}</h2>
-                                <div className="flex gap-2">
-                                    <span className="px-3 py-1 bg-gray-100 dark:bg-[#222] text-xs font-bold rounded">{previewMeme.category}</span>
-                                    <span className="px-3 py-1 bg-gray-100 dark:bg-[#222] text-xs font-bold rounded">{previewMeme.language}</span>
-                                </div>
-                                {previewMeme.credit && (
-                                    <div className="p-3 bg-gray-50 dark:bg-[#222] rounded-lg">
-                                        <p className="text-xs font-bold text-gray-500 mb-1">Credit:</p>
-                                        <p className="text-sm text-black dark:text-white">{previewMeme.credit}</p>
-                                    </div>
-                                )}
-                                <div className="flex gap-2 pt-4">
-                                    <button
-                                        onClick={() => approveMeme(previewMeme.id)}
-                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-colors"
-                                    >
-                                        <Check size={18} />
-                                        Approve
-                                    </button>
-                                    <button
-                                        onClick={() => openEditModal(previewMeme)}
-                                        className="px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold transition-colors"
-                                    >
-                                        <Edit2 size={18} />
-                                    </button>
-                                    <button
-                                        onClick={() => deleteMeme(previewMeme.id)}
-                                        className="px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition-colors"
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            
-            {/* Edit Modal */}
-            {editingMeme && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-[#1f1f1f] w-full max-w-6xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-                        <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-[#1f1f1f] z-10">
-                            <h3 className="text-xl font-black">Edit Meme</h3>
+            {
+                previewMeme && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-sm">
+                        <div className="relative w-full max-w-4xl bg-white dark:bg-[#1a1a1a] rounded-2xl overflow-hidden shadow-2xl">
                             <button
-                                onClick={() => setEditingMeme(null)}
-                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                                onClick={() => setPreviewMeme(null)}
+                                className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-white/20 transition-colors"
                             >
-                                <X size={20} />
+                                <X size={24} />
                             </button>
-                        </div>
 
-                        <div className="flex-1 overflow-y-auto">
-                            <div className="flex flex-col lg:flex-row h-full">
-                                {/* LEFT: Media Preview */}
-                                <div className="lg:w-1/2 bg-black flex items-center justify-center p-8 relative min-h-[300px] lg:min-h-full">
-                                    {editingMeme.media_type === "video" || editingMeme.file_url.endsWith(".mp4") ? (
-                                        <video src={editingMeme.file_url} controls className="max-w-full max-h-[500px] rounded-lg shadow-2xl" />
-                                    ) : editingMeme.media_type === "audio" || editingMeme.media_type === "raw" ? (
+                            <div className="flex flex-col md:flex-row">
+                                <div className="flex-1 bg-black flex items-center justify-center p-8">
+                                    {previewMeme.media_type === "video" || previewMeme.file_url.endsWith(".mp4") ? (
+                                        <video src={previewMeme.file_url} controls autoPlay className="max-w-full max-h-[70vh]" />
+                                    ) : previewMeme.media_type === "raw" || previewMeme.media_type === "audio" ? (
                                         <div className="text-center">
-                                            {editingMeme.thumbnail_url ? (
-                                                <img src={editingMeme.thumbnail_url} className="max-w-xs max-h-64 mx-auto mb-6 rounded-lg shadow-2xl object-cover" />
-                                            ) : (
-                                                <div className="w-48 h-48 bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                                                    <Music className="w-20 h-20 text-yellow-400" />
-                                                </div>
-                                            )}
-                                            <audio src={editingMeme.file_url} controls className="w-full max-w-md" />
+                                            {previewMeme.thumbnail_url && <img src={previewMeme.thumbnail_url} className="max-w-md max-h-64 mx-auto mb-6 rounded-lg" />}
+                                            <Music className="w-24 h-24 text-yellow-400 mx-auto mb-6" />
+                                            <audio src={previewMeme.file_url} controls className="w-full" autoPlay />
                                         </div>
                                     ) : (
-                                        <img src={editingMeme.file_url} className="max-w-full max-h-[500px] object-contain rounded-lg shadow-2xl" />
+                                        <img src={previewMeme.file_url} className="max-w-full max-h-[70vh] object-contain" />
                                     )}
                                 </div>
 
-                                {/* RIGHT: Edit Form */}
-                                <div className="lg:w-1/2 p-6 lg:p-8 space-y-6 bg-white dark:bg-[#1f1f1f]">
-                                    {/* Title */}
-                                    <div>
-                                        <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Title</label>
-                                        <input
-                                            type="text"
-                                            value={editForm.title || ""}
-                                            onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                                            className="w-full p-4 rounded-xl bg-gray-50 dark:bg-[#2a2a2a] font-bold text-lg outline-none focus:ring-2 focus:ring-yellow-400 transition-all"
-                                            placeholder="Enter meme title..."
-                                        />
+                                <div className="w-full md:w-80 p-6 space-y-4">
+                                    <h2 className="text-2xl font-black text-black dark:text-white">{previewMeme.title}</h2>
+                                    <div className="flex gap-2">
+                                        <span className="px-3 py-1 bg-gray-100 dark:bg-[#222] text-xs font-bold rounded">{previewMeme.category}</span>
+                                        <span className="px-3 py-1 bg-gray-100 dark:bg-[#222] text-xs font-bold rounded">{previewMeme.language}</span>
                                     </div>
-
-                                    {/* Category & Language */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Category</label>
-                                            <div className="relative">
-                                                <select
-                                                    value={editForm.category || ""}
-                                                    onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                                                    className="w-full p-3 rounded-xl bg-gray-50 dark:bg-[#2a2a2a] appearance-none outline-none focus:ring-2 focus:ring-yellow-400 font-medium"
-                                                >
-                                                    {categories.map(cat => (
-                                                        <option key={cat} value={cat}>{cat}</option>
-                                                    ))}
-                                                </select>
-                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Language</label>
-                                            <div className="relative">
-                                                <select
-                                                    value={editForm.language || ""}
-                                                    onChange={(e) => setEditForm({ ...editForm, language: e.target.value })}
-                                                    className="w-full p-3 rounded-xl bg-gray-50 dark:bg-[#2a2a2a] appearance-none outline-none focus:ring-2 focus:ring-yellow-400 font-medium"
-                                                >
-                                                    {languages.map(lang => (
-                                                        <option key={lang} value={lang}>{lang}</option>
-                                                    ))}
-                                                </select>
-                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Credit */}
-                                    <div>
-                                        <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Credit / Source</label>
-                                        <input
-                                            type="text"
-                                            value={editForm.credit || ""}
-                                            onChange={(e) => setEditForm({ ...editForm, credit: e.target.value })}
-                                            placeholder="Original creator or source..."
-                                            className="w-full p-3 rounded-xl bg-gray-50 dark:bg-[#2a2a2a] outline-none focus:ring-2 focus:ring-yellow-400"
-                                        />
-                                    </div>
-
-                                    {/* Thumbnail Upload */}
-                                    {(editingMeme.media_type === "audio" || editingMeme.media_type === "video" || editingMeme.media_type === "raw") && (
-                                        <div>
-                                            <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Custom Thumbnail</label>
-                                            <div className="flex items-center gap-4">
-                                                {thumbnailPreview || editForm.thumbnail_url ? (
-                                                    <img src={thumbnailPreview || editForm.thumbnail_url} className="w-20 h-20 rounded-lg object-cover bg-gray-100" />
-                                                ) : (
-                                                    <div className="w-20 h-20 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] flex items-center justify-center text-gray-400">
-                                                        <Eye size={24} />
-                                                    </div>
-                                                )}
-                                                <label className="flex-1 cursor-pointer">
-                                                    <div className="px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl hover:border-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/10 transition-all text-center">
-                                                        <span className="text-sm font-bold text-gray-500">Click to upload new thumbnail</span>
-                                                    </div>
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        onChange={handleThumbnailChange}
-                                                        className="hidden"
-                                                    />
-                                                </label>
-                                            </div>
+                                    {previewMeme.credit && (
+                                        <div className="p-3 bg-gray-50 dark:bg-[#222] rounded-lg">
+                                            <p className="text-xs font-bold text-gray-500 mb-1">Credit:</p>
+                                            <p className="text-sm text-black dark:text-white">{previewMeme.credit}</p>
                                         </div>
                                     )}
+                                    <div className="flex gap-2 pt-4">
+                                        <button
+                                            onClick={() => approveMeme(previewMeme.id)}
+                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-colors"
+                                        >
+                                            <Check size={18} />
+                                            Approve
+                                        </button>
+                                        <button
+                                            onClick={() => openEditModal(previewMeme)}
+                                            className="px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold transition-colors"
+                                        >
+                                            <Edit2 size={18} />
+                                        </button>
+                                        <button
+                                            onClick={() => deleteMeme(previewMeme.id)}
+                                            className="px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition-colors"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                )
+            }
 
-                        <div className="p-6 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 bg-white dark:bg-[#1f1f1f]">
-                            <button
-                                onClick={() => setEditingMeme(null)}
-                                className="px-6 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={saveEdits}
-                                disabled={saving}
-                                className="px-8 py-3 rounded-xl font-bold bg-yellow-400 text-black hover:bg-yellow-500 disabled:opacity-50 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
-                            >
-                                {saving ? (
-                                    <div className="flex items-center gap-2">
-                                        <Loader2 className="animate-spin" size={20} />
-                                        <span>Saving...</span>
+
+            {/* Edit Modal */}
+            {
+                editingMeme && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <div className="bg-white dark:bg-[#1f1f1f] w-full max-w-6xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+                            <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-[#1f1f1f] z-10">
+                                <h3 className="text-xl font-black">Edit Meme</h3>
+                                <button
+                                    onClick={() => setEditingMeme(null)}
+                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto">
+                                <div className="flex flex-col lg:flex-row h-full">
+                                    {/* LEFT: Media Preview */}
+                                    <div className="lg:w-1/2 bg-black flex items-center justify-center p-8 relative min-h-[300px] lg:min-h-full">
+                                        {editingMeme.media_type === "video" || editingMeme.file_url.endsWith(".mp4") ? (
+                                            <video src={editingMeme.file_url} controls className="max-w-full max-h-[500px] rounded-lg shadow-2xl" />
+                                        ) : editingMeme.media_type === "audio" || editingMeme.media_type === "raw" ? (
+                                            <div className="text-center">
+                                                {editingMeme.thumbnail_url ? (
+                                                    <img src={editingMeme.thumbnail_url} className="max-w-xs max-h-64 mx-auto mb-6 rounded-lg shadow-2xl object-cover" />
+                                                ) : (
+                                                    <div className="w-48 h-48 bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                                                        <Music className="w-20 h-20 text-yellow-400" />
+                                                    </div>
+                                                )}
+                                                <audio src={editingMeme.file_url} controls className="w-full max-w-md" />
+                                            </div>
+                                        ) : (
+                                            <img src={editingMeme.file_url} className="max-w-full max-h-[500px] object-contain rounded-lg shadow-2xl" />
+                                        )}
                                     </div>
-                                ) : (
-                                    "Save Changes"
-                                )}
-                            </button>
+
+                                    {/* RIGHT: Edit Form */}
+                                    <div className="lg:w-1/2 p-6 lg:p-8 space-y-6 bg-white dark:bg-[#1f1f1f]">
+                                        {/* Title */}
+                                        <div>
+                                            <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Title</label>
+                                            <input
+                                                type="text"
+                                                value={editForm.title || ""}
+                                                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                                                className="w-full p-4 rounded-xl bg-gray-50 dark:bg-[#2a2a2a] font-bold text-lg outline-none focus:ring-2 focus:ring-yellow-400 transition-all"
+                                                placeholder="Enter meme title..."
+                                            />
+                                        </div>
+
+                                        {/* Category & Language */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Category</label>
+                                                <div className="relative">
+                                                    <select
+                                                        value={editForm.category || ""}
+                                                        onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                                                        className="w-full p-3 rounded-xl bg-gray-50 dark:bg-[#2a2a2a] appearance-none outline-none focus:ring-2 focus:ring-yellow-400 font-medium"
+                                                    >
+                                                        {categories.map(cat => (
+                                                            <option key={cat} value={cat}>{cat}</option>
+                                                        ))}
+                                                    </select>
+                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Language</label>
+                                                <div className="relative">
+                                                    <select
+                                                        value={editForm.language || ""}
+                                                        onChange={(e) => setEditForm({ ...editForm, language: e.target.value })}
+                                                        className="w-full p-3 rounded-xl bg-gray-50 dark:bg-[#2a2a2a] appearance-none outline-none focus:ring-2 focus:ring-yellow-400 font-medium"
+                                                    >
+                                                        {languages.map(lang => (
+                                                            <option key={lang} value={lang}>{lang}</option>
+                                                        ))}
+                                                    </select>
+                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Credit */}
+                                        <div>
+                                            <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Credit / Source</label>
+                                            <input
+                                                type="text"
+                                                value={editForm.credit || ""}
+                                                onChange={(e) => setEditForm({ ...editForm, credit: e.target.value })}
+                                                placeholder="Original creator or source..."
+                                                className="w-full p-3 rounded-xl bg-gray-50 dark:bg-[#2a2a2a] outline-none focus:ring-2 focus:ring-yellow-400"
+                                            />
+                                        </div>
+
+                                        {/* Thumbnail Upload */}
+                                        {(editingMeme.media_type === "audio" || editingMeme.media_type === "video" || editingMeme.media_type === "raw") && (
+                                            <div>
+                                                <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Custom Thumbnail</label>
+                                                <div className="flex items-center gap-4">
+                                                    {thumbnailPreview || editForm.thumbnail_url ? (
+                                                        <img src={thumbnailPreview || editForm.thumbnail_url} className="w-20 h-20 rounded-lg object-cover bg-gray-100" />
+                                                    ) : (
+                                                        <div className="w-20 h-20 rounded-lg bg-gray-100 dark:bg-[#2a2a2a] flex items-center justify-center text-gray-400">
+                                                            <Eye size={24} />
+                                                        </div>
+                                                    )}
+                                                    <label className="flex-1 cursor-pointer">
+                                                        <div className="px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl hover:border-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/10 transition-all text-center">
+                                                            <span className="text-sm font-bold text-gray-500">Click to upload new thumbnail</span>
+                                                        </div>
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            onChange={handleThumbnailChange}
+                                                            className="hidden"
+                                                        />
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-6 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 bg-white dark:bg-[#1f1f1f]">
+                                <button
+                                    onClick={() => setEditingMeme(null)}
+                                    className="px-6 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={saveEdits}
+                                    disabled={saving}
+                                    className="px-8 py-3 rounded-xl font-bold bg-yellow-400 text-black hover:bg-yellow-500 disabled:opacity-50 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
+                                >
+                                    {saving ? (
+                                        <div className="flex items-center gap-2">
+                                            <Loader2 className="animate-spin" size={20} />
+                                            <span>Saving...</span>
+                                        </div>
+                                    ) : (
+                                        "Save Changes"
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
         </div>
-    );
+    )
+}
+
+
+function RequestCard({ request, onUpdate }) {
+    const [reply, setReply] = useState(request.adminReply || "");
+    const [isEditing, setIsEditing] = useState(false);
+
+    const handleSubmit = () => {
+        onUpdate(request.id, request.status, reply);
+        setIsEditing(false);
+    };
+
+    const StatusBadge = ({ status }) => {
+        const colors = {
+            pending: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+            completed: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+            rejected: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+            reviewed: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+        };
+        return (
+            <span className={`px-2 py-1 rounded text-xs font-black uppercase tracking-wider ${colors[status] || colors.pending}`}>
+                {status}
+            </span>
+        );
+    }
+
+    return (
+        <div className="bg-white dark:bg-[#1a1a1a] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col md:flex-row gap-6">
+            <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                    <img src={request.userAvatar || "https://ui-avatars.com/api/?name=User"} className="w-8 h-8 rounded-full" />
+                    <div>
+                        <p className="font-bold text-sm dark:text-white">{request.username}</p>
+                        <p className="text-xs text-gray-500">
+                            {request.createdAt?.toDate ? request.createdAt.toDate().toLocaleDateString() : "Unknown date"}
+                        </p>
+                    </div>
+                    <StatusBadge status={request.status} />
+                </div>
+
+                <h3 className="text-xl font-bold text-black dark:text-white mb-2">{request.title}</h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-4 bg-gray-50 dark:bg-[#222] p-3 rounded-lg text-sm">{request.description}</p>
+
+                {request.mediaUrl && (
+                    <div className="mb-4">
+                        <span className="text-xs font-bold text-gray-500 uppercase mb-1 block">Reference:</span>
+                        {request.mediaType === 'image' || request.mediaUrl.match(/\.(jpeg|jpg|gif|png)$/) ? (
+                            <img src={request.mediaUrl} className="max-h-40 rounded-lg border border-gray-200 dark:border-gray-700" />
+                        ) : (
+                            <a href={request.mediaUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline flex items-center gap-1">
+                                {request.mediaUrl} <Edit2 size={12} />
+                            </a>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            <div className="w-full md:w-80 border-l border-gray-100 dark:border-gray-800 md:pl-6 flex flex-col gap-3">
+                <div className="flex flex-col gap-2">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Admin Action</label>
+                    <div className="flex gap-2">
+                        <button onClick={() => onUpdate(request.id, "completed", reply)} className="flex-1 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold text-xs">Complete</button>
+                        <button onClick={() => onUpdate(request.id, "rejected", reply)} className="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold text-xs">Reject</button>
+                    </div>
+                </div>
+
+                <div className="h-px bg-gray-100 dark:bg-gray-800 my-1"></div>
+
+                <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Reply / Note</label>
+                    <textarea
+                        value={reply}
+                        onChange={(e) => setReply(e.target.value)}
+                        placeholder="Type a reply to the user..."
+                        className="w-full p-3 rounded-lg bg-gray-100 dark:bg-[#222] border-none text-sm focus:ring-2 focus:ring-yellow-400 outline-none dark:text-white mb-2"
+                        rows={3}
+                    />
+                    <button onClick={() => onUpdate(request.id, request.status, reply)} className="w-full py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-bold text-xs">
+                        Update Request
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
 }

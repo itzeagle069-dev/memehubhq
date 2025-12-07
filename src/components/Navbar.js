@@ -195,7 +195,7 @@ export default function Navbar() {
                         </Link>
 
                         {/* Desktop Navigation */}
-                        <div className="hidden md:flex items-center gap-8">
+                        <div className="hidden md:flex items-center gap-4 lg:gap-8">
                             <div className="relative group" ref={filterRef}>
                                 <form onSubmit={handleSearch} className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -205,8 +205,8 @@ export default function Navbar() {
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder="Search memes..."
-                                        className="bg-gray-100 dark:bg-[#1a1a1a] text-black dark:text-white text-sm rounded-full pl-10 pr-10 py-2 w-72 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all"
+                                        placeholder="Search..."
+                                        className="bg-gray-100 dark:bg-[#1a1a1a] text-black dark:text-white text-sm rounded-full pl-10 pr-10 py-2 w-40 lg:w-72 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all"
                                     />
                                     <button
                                         type="button"
@@ -338,20 +338,20 @@ export default function Navbar() {
                                 )}
                             </div>
 
-                            <div className="flex items-center gap-6 text-sm font-medium text-gray-600 dark:text-gray-300">
+                            <div className="flex items-center gap-3 lg:gap-6 text-sm font-medium text-gray-600 dark:text-gray-300">
                                 <Link href="/upload" className="hover:text-yellow-400 transition-colors flex items-center gap-1">
-                                    <Upload size={16} />
-                                    Upload
+                                    <Upload size={18} />
+                                    <span className="hidden lg:inline">Upload</span>
                                 </Link>
 
                                 <Link href="/favorites" className="hover:text-yellow-400 transition-colors flex items-center gap-1">
-                                    <Star size={16} />
-                                    Favorites
+                                    <Star size={18} />
+                                    <span className="hidden lg:inline">Favorites</span>
                                 </Link>
 
                                 <button onClick={() => setIsDownloadOpen(true)} className="hover:text-yellow-400 transition-colors flex items-center gap-1 relative">
-                                    <ShoppingBag size={16} />
-                                    Downloads
+                                    <ShoppingBag size={18} />
+                                    <span className="hidden lg:inline">Downloads</span>
                                     {downloadList.length > 0 && (
                                         <span className="absolute -top-2 -right-2 bg-yellow-400 text-black text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                                             {downloadList.length}
@@ -361,8 +361,8 @@ export default function Navbar() {
 
                                 {user?.uid === ADMIN_ID && (
                                     <Link href="/admin" className="hover:text-yellow-400 transition-colors flex items-center gap-1 relative">
-                                        <ShieldAlert size={16} />
-                                        Admin
+                                        <ShieldAlert size={18} />
+                                        <span className="hidden lg:inline">Admin</span>
                                         {pendingCount > 0 && (
                                             <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                                                 {pendingCount}
@@ -370,6 +370,12 @@ export default function Navbar() {
                                         )}
                                     </Link>
                                 )}
+
+                                <Link href="/request" className="bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-600 dark:text-yellow-400 px-3 py-1.5 rounded-lg flex items-center gap-1 text-xs font-bold transition-colors border border-yellow-400/20">
+                                    <span className="text-lg">✨</span>
+                                    <span className="hidden lg:inline">Request</span>
+                                </Link>
+
                             </div>
 
                             <div className="flex items-center gap-4">
@@ -430,40 +436,13 @@ export default function Navbar() {
 
                         {/* Mobile Actions + Menu Button */}
                         <div className="md:hidden flex items-center gap-2">
-                            {/* Theme Toggle - Mobile */}
-                            <button
-                                onClick={toggleTheme}
-                                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#1a1a1a] text-gray-600 dark:text-gray-300 transition-colors"
-                                aria-label="Toggle theme"
-                            >
-                                {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-                            </button>
-
-                            {/* Upload Button - Mobile */}
-                            <Link
-                                href="/upload"
-                                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#1a1a1a] text-gray-600 dark:text-gray-300 hover:text-yellow-400 transition-colors"
-                                aria-label="Upload meme"
-                            >
-                                <Upload size={20} />
-                            </Link>
-
-                            {/* Favorites Button - Mobile */}
-                            <Link
-                                href="/favorites"
-                                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#1a1a1a] text-gray-600 dark:text-gray-300 hover:text-yellow-400 transition-colors"
-                                aria-label="Favorites"
-                            >
-                                <Star size={20} />
-                            </Link>
-
                             {/* Download Bag - Mobile */}
                             <button
                                 onClick={() => setIsDownloadOpen(true)}
                                 className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#1a1a1a] text-gray-600 dark:text-gray-300 hover:text-yellow-400 transition-colors relative"
                                 aria-label="Download bag"
                             >
-                                <ShoppingBag size={20} />
+                                <ShoppingBag size={22} />
                                 {downloadList.length > 0 && (
                                     <span className="absolute -top-1 -right-1 bg-yellow-400 text-black text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                                         {downloadList.length}
@@ -477,89 +456,145 @@ export default function Navbar() {
                                 className="text-black dark:text-white p-2"
                                 aria-label="Menu"
                             >
-                                {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                                {isMobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
                             </button>
                         </div>
+                    </div>
+
+                    {/* Mobile Search Bar - Persistent */}
+                    <div className="md:hidden pb-4">
+                        <form onSubmit={handleSearch} className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Search className="h-4 w-4 text-gray-400" />
+                            </div>
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search memes..."
+                                className="bg-gray-100 dark:bg-[#1a1a1a] text-black dark:text-white text-sm rounded-full pl-10 pr-4 py-2.5 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                            />
+                        </form>
                     </div>
                 </div>
 
                 {/* Mobile Menu Dropdown */}
                 {isMobileMenuOpen && (
-                    <div className="md:hidden bg-white dark:bg-[#050505] border-t border-gray-200 dark:border-gray-800">
-                        <div className="px-4 py-4 space-y-3">
+                    <div className="md:hidden bg-white dark:bg-[#050505] border-t border-gray-200 dark:border-gray-800 h-screen overflow-y-auto">
+                        <div className="px-4 py-6 space-y-4">
                             {/* Search - Mobile */}
-                            <form onSubmit={handleSearch} className="relative mb-4">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Search className="h-4 w-4 text-gray-400" />
-                                </div>
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Search memes..."
-                                    className="bg-gray-100 dark:bg-[#1a1a1a] text-black dark:text-white text-sm rounded-full pl-10 pr-4 py-2.5 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                                />
-                            </form>
 
-                            {/* Admin Link */}
-                            {user?.uid === ADMIN_ID && (
+
+                            <div className="space-y-2">
                                 <Link
-                                    href="/admin"
-                                    className="flex items-center gap-2 py-2.5 text-yellow-600 dark:text-yellow-400 font-bold"
+                                    href="/upload"
+                                    className="flex items-center gap-3 px-4 py-3 rounded-xl bg-yellow-400 text-black font-black hover:bg-yellow-500 transition-colors"
                                     onClick={() => setIsMobileMenuOpen(false)}
                                 >
-                                    <ShieldAlert size={18} />
-                                    Admin Dashboard {pendingCount > 0 && `(${pendingCount})`}
+                                    <Upload size={20} />
+                                    Upload Meme
                                 </Link>
-                            )}
+
+                                <Link
+                                    href="/request"
+                                    className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-100 dark:bg-[#1a1a1a] text-black dark:text-white font-bold hover:text-yellow-400 transition-colors"
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                >
+                                    <span className="text-xl">✨</span>
+                                    Request a Meme
+                                </Link>
+                            </div>
+
+                            <hr className="border-gray-100 dark:border-[#222]" />
+
+                            <div className="space-y-1">
+                                <Link
+                                    href="/favorites"
+                                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 font-bold hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-colors"
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                >
+                                    <Star size={20} />
+                                    My Favorites
+                                </Link>
+
+                                {/* Admin Link */}
+                                {user?.uid === ADMIN_ID && (
+                                    <Link
+                                        href="/admin"
+                                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-yellow-600 dark:text-yellow-400 font-bold hover:bg-yellow-50 dark:hover:bg-yellow-900/10 transition-colors"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                    >
+                                        <ShieldAlert size={20} />
+                                        Admin Dashboard {pendingCount > 0 && `(${pendingCount})`}
+                                    </Link>
+                                )}
+                            </div>
+
+                            <hr className="border-gray-100 dark:border-[#222]" />
 
                             {/* User Menu */}
                             {user ? (
-                                <>
+                                <div className="space-y-1">
+                                    <div className="px-4 py-2 mb-2">
+                                        <p className="text-sm font-bold text-black dark:text-white">{user.displayName}</p>
+                                        <p className="text-xs text-gray-500">{user.email}</p>
+                                    </div>
+
                                     <Link
                                         href={`/user/${user.uid}`}
-                                        className="flex items-center gap-2 py-2.5 text-gray-600 dark:text-gray-300 hover:text-yellow-400"
+                                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 font-bold hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-colors"
                                         onClick={() => setIsMobileMenuOpen(false)}
                                     >
-                                        <UserIcon size={18} />
+                                        <UserIcon size={20} />
                                         My Profile
                                     </Link>
-                                    <Link
-                                        href="/favorites"
-                                        className="flex items-center gap-2 py-2.5 text-gray-600 dark:text-gray-300 hover:text-yellow-400"
-                                        onClick={() => setIsMobileMenuOpen(false)}
-                                    >
-                                        <Star size={18} />
-                                        My Favorites
-                                    </Link>
+
                                     <button
-                                        onClick={logout}
-                                        className="flex items-center gap-2 w-full text-left py-2.5 text-red-600 hover:text-red-700"
+                                        onClick={() => { toggleTheme(); setIsMobileMenuOpen(false); }}
+                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 font-bold hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-colors"
                                     >
-                                        <LogOut size={18} />
+                                        {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+                                        {theme === "dark" ? "Light Mode" : "Dark Mode"}
+                                    </button>
+
+                                    <button
+                                        onClick={() => { logout(); setIsMobileMenuOpen(false); }}
+                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 font-bold hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+                                    >
+                                        <LogOut size={20} />
                                         Logout
                                     </button>
-                                </>
+                                </div>
                             ) : (
-                                <button
-                                    onClick={() => { googleLogin(); setIsMobileMenuOpen(false); }}
-                                    className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2"
-                                >
-                                    <svg className="w-5 h-5" viewBox="0 0 24 24">
-                                        <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                                        <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                                        <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                                        <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                                    </svg>
-                                    Sign in with Google
-                                </button>
+                                <div className="space-y-2">
+                                    <button
+                                        onClick={() => { toggleTheme(); setIsMobileMenuOpen(false); }}
+                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 font-bold hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-colors"
+                                    >
+                                        {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+                                        {theme === "dark" ? "Light Mode" : "Dark Mode"}
+                                    </button>
+
+                                    <button
+                                        onClick={() => { googleLogin(); setIsMobileMenuOpen(false); }}
+                                        className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2"
+                                    >
+                                        <svg className="w-5 h-5" viewBox="0 0 24 24">
+                                            <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                                            <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                                            <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                                            <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                                        </svg>
+                                        Sign in with Google
+                                    </button>
+                                </div>
                             )}
                         </div>
                     </div>
                 )}
             </nav>
 
-            {/* Download Modal */}
+            {/* Download Modal - Same as before */}
             {isDownloadOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setIsDownloadOpen(false)}>
                     <div className="bg-white dark:bg-[#1f1f1f] w-full max-w-md rounded-2xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
