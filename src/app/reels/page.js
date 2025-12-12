@@ -1,133 +1,107 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { ArrowLeft, Send, Heart, MessageCircle, Share2, MoreHorizontal, ChevronUp, ChevronDown, Check, Volume2, VolumeX, Download, X } from "lucide-react";
+import { ArrowLeft, Send, Heart, MessageCircle, Share2, ChevronUp, ChevronDown, Check, Volume2, Download, X, Play } from "lucide-react";
 import Link from "next/link";
-import { db, auth } from "@/lib/firebase";
-import { collection, query, where, getDocs, doc, updateDoc, arrayUnion, arrayRemove, increment } from "firebase/firestore";
-import { useAuth } from "@/context/AuthContext";
+import { db } from "@/lib/firebase"; // Your firebase config
+import { collection, query, where, getDocs, limit } from "firebase/firestore";
 import { toast } from "react-hot-toast";
-import { useRouter } from "next/navigation";
 
-export default function ReelModeConfig() {
-    const router = useRouter();
-    const { user } = useAuth();
-
-    // Core State
+export default function MemeReels() {
+    // -- STATE --
     const [memes, setMemes] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [isLoading, setIsLoading] = useState(true);
-    const [filters, setFilters] = useState({ video: true, image: false, audio: false });
-    const [activeTab, setActiveTab] = useState("for_you"); // for_you, following
+    const [loading, setLoading] = useState(true);
 
-    // Refs
+    // Filters: Default Video=TRUE, others FALSE
+    const [filters, setFilters] = useState({ video: true, image: false, audio: false });
+    const [activeTab, setActiveTab] = useState("for_you");
+
+    // Refs for scrolling and video control
     const containerRef = useRef(null);
     const videoRefs = useRef({});
 
-    // -- 1. Fetching Logic (Algorithm) --
+    // -- 1. THE ALGORITHM (Viral + Fresh + Random) --
     useEffect(() => {
-        const fetchReels = async () => {
-            setIsLoading(true);
+        const fetchContent = async () => {
+            setLoading(true);
             try {
-                // Base Query: Approved Memes
-                const q = query(
-                    collection(db, "memes"),
-                    where("status", "==", "approved")
-                );
-
+                // Fetch approved memes (In a real app, use pagination/infinite scroll)
+                const q = query(collection(db, "memes"), where("status", "==", "approved"), limit(50));
                 const snapshot = await getDocs(q);
-                let allDocs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                let rawData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                // Filter logic (Client side for complex "OR" logic mixed with types)
-                let filtered = allDocs.filter(m => {
-                    const isVideo = m.media_type === 'video' || m.file_url?.endsWith('.mp4');
-                    const isAudio = m.media_type === 'audio' || m.file_url?.endsWith('.mp3');
-                    const isImage = !isVideo && !isAudio;
+                // A. TYPE FILTERING
+                let filtered = rawData.filter(m => {
+                    const isVid = m.media_type === 'video' || m.file_url?.endsWith('.mp4');
+                    const isImg = m.media_type === 'image' || (!isVid && !m.file_url?.endsWith('.mp3'));
 
-                    if (filters.video && isVideo) return true;
-                    if (filters.image && isImage) return true;
-                    if (filters.audio && isAudio) return true;
+                    // Logic: Return true if the specific filter is ON and type matches
+                    if (filters.video && isVid) return true;
+                    if (filters.image && isImg) return true;
+                    // (Add audio logic if needed)
                     return false;
                 });
 
-                // "TikTok Algo" Simulation:
-                // 1. Trending (High views/likes) - 40%
-                // 2. Fresh (Recent) - 30%
-                // 3. Random/Undiscovered - 30%
+                // B. THE "TIKTOK" SORTING ALGORITHM
+                // We calculate a 'Hot Score' for every meme, then shuffle slightly
+                const scoredAndSorted = filtered.map(item => {
+                    // Weight Factors
+                    const viewsWeight = item.views || 0;
+                    const likesWeight = (item.likes || 0) * 10; // Likes are worth more
+                    const recencyBoost = new Date() - (item.createdAt?.toDate ? item.createdAt.toDate() : new Date()) < 604800000 ? 500 : 0; // Boost if < 1 week old
+                    const randomDiscovery = Math.random() * 1000; // The "Wildcard" factor
 
-                // Sort by "Hotness" score
-                filtered = filtered.map(m => ({
-                    ...m,
-                    score: (m.views || 0) + ((m.likes || 0) * 5) + (Math.random() * 50) // Random spice
-                })).sort((a, b) => b.score - a.score);
+                    return {
+                        ...item,
+                        score: viewsWeight + likesWeight + recencyBoost + randomDiscovery
+                    };
+                }).sort((a, b) => b.score - a.score); // Highest score first
 
-                setMemes(filtered);
+                setMemes(scoredAndSorted);
             } catch (err) {
-                console.error("Reel fetch error:", err);
+                console.error(err);
             } finally {
-                setIsLoading(false);
+                setLoading(false);
             }
         };
 
-        fetchReels();
-    }, [filters]);
+        fetchContent();
+    }, [filters]); // Re-run if user changes filters
 
-    // -- 2. Scroll Handling (Snap) -- 
-    const handleScroll = () => {
-        if (!containerRef.current) return;
-
-        const scrollPos = containerRef.current.scrollTop;
-        const index = Math.round(scrollPos / window.innerHeight);
-
-        if (index !== currentIndex && index >= 0 && index < memes.length) {
-            setCurrentIndex(index);
-        }
-    };
-
-    // -- 3. Video Playback Control --
+    // -- 2. AUTO PLAY / PAUSE LOGIC --
     useEffect(() => {
-        // Pause all other videos
-        Object.keys(videoRefs.current).forEach(idx => {
-            const vid = videoRefs.current[idx];
-            if (vid) {
-                if (parseInt(idx) === currentIndex) {
-                    vid.currentTime = 0; // Restart loop? Or just play
-                    vid.play().catch(e => console.log("Auto-play blocked", e));
+        // Pause all videos except the current one
+        Object.keys(videoRefs.current).forEach((index) => {
+            const video = videoRefs.current[index];
+            if (video) {
+                if (parseInt(index) === currentIndex) {
+                    video.currentTime = 0;
+                    video.play().catch(e => console.log("Autoplay prevented:", e));
                 } else {
-                    vid.pause();
+                    video.pause();
                 }
             }
         });
     }, [currentIndex, memes]);
 
-    // -- 4. Actions --
-    const goToNext = () => {
-        if (currentIndex < memes.length - 1) {
-            containerRef.current.scrollTo({
-                top: (currentIndex + 1) * window.innerHeight,
-                behavior: 'smooth'
-            });
-        }
+    // -- 3. SCROLL HANDLER --
+    const handleScroll = () => {
+        if (!containerRef.current) return;
+        const scrollPosition = containerRef.current.scrollTop;
+        const windowHeight = window.innerHeight;
+        // Calculate which index we are snapped to
+        const newIndex = Math.round(scrollPosition / windowHeight);
+        if (newIndex !== currentIndex) setCurrentIndex(newIndex);
     };
 
-    const goToPrev = () => {
-        if (currentIndex > 0) {
-            containerRef.current.scrollTo({
-                top: (currentIndex - 1) * window.innerHeight,
-                behavior: 'smooth'
-            });
-        }
-    };
-
-    const handleReaction = async (meme) => {
-        if (!user) return toast.error("Login to like!");
-        // Optimistic Update
-        // (Implementation omitted for brevity, logic same as MemeGridItem)
-        toast.success("Liked! (Simulated)");
+    // Navigation Helpers
+    const scrollTo = (idx) => {
+        containerRef.current.scrollTo({ top: idx * window.innerHeight, behavior: 'smooth' });
     };
 
     return (
-        <div className="flex h-screen w-screen bg-black text-white overflow-hidden font-sans">
+        <div className="flex h-screen w-screen bg-black text-white font-sans overflow-hidden">
 
             {/* Top Right Close Button (For easy exit on Mobile/Desktop) */}
             <Link
@@ -137,202 +111,219 @@ export default function ReelModeConfig() {
                 <X size={24} />
             </Link>
 
-            {/* -- LEFT SIDEBAR (TikTok Style Navigation) -- */}
-            <div className="hidden md:flex flex-col justify-between w-64 p-4 border-r border-white/10 z-20 bg-black">
-                <div>
-                    <Link href="/" className="flex items-center gap-2 mb-8 group">
-                        <div className="p-2 bg-yellow-400 rounded-lg group-hover:scale-105 transition-transform">
-                            <ArrowLeft className="text-black" size={20} />
+            {/* --- LEFT SIDEBAR (TikTok Style) --- */}
+            <div className="hidden lg:flex w-[260px] flex-col border-r border-gray-800 bg-black z-20">
+                {/* Logo Area */}
+                <div className="p-6">
+                    <Link href="/" className="flex items-center gap-3 group">
+                        <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center group-hover:rotate-12 transition-transform">
+                            <span className="text-2xl">😂</span>
                         </div>
-                        <span className="font-bold text-xl tracking-tight">MemeHub HQ</span>
+                        <h1 className="font-bold text-2xl tracking-tighter">MemeHub</h1>
                     </Link>
+                </div>
 
-                    <nav className="flex flex-col gap-2">
-                        <button
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-lg transition-colors ${activeTab === 'for_you' ? 'bg-red-500 text-white' : 'text-gray-400 hover:bg-white/5'}`}
-                            onClick={() => setActiveTab('for_you')}
-                        >
-                            <Send size={24} /> For You
-                        </button>
-                        <button
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-lg transition-colors ${activeTab === 'following' ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5'}`}
-                            onClick={() => setActiveTab('following')}
-                        >
-                            <div className="w-6 h-6 rounded-full border-2 border-current" /> Following
-                        </button>
-                    </nav>
+                {/* Main Nav Tabs */}
+                <div className="flex flex-col px-4 gap-2">
+                    <button
+                        onClick={() => setActiveTab('for_you')}
+                        className={`flex items-center gap-3 p-3 rounded-xl font-bold transition-all ${activeTab === 'for_you' ? 'bg-[#FE2C55] text-white' : 'hover:bg-gray-900 text-gray-400'}`}
+                    >
+                        <Send size={20} /> For You
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('following')}
+                        className={`flex items-center gap-3 p-3 rounded-xl font-bold transition-all ${activeTab === 'following' ? 'bg-gray-800 text-white' : 'hover:bg-gray-900 text-gray-400'}`}
+                    >
+                        <div className="w-5 h-5 border-2 border-current rounded-full" /> Following
+                    </button>
+                </div>
 
-                    {/* Filter Toggles (As requested: Tick/Untick) */}
-                    <div className="mt-8 pt-8 border-t border-white/10">
-                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Content Preferences</h3>
-                        <div className="flex flex-col gap-2">
-                            {[
-                                { id: 'video', label: 'Videos', icon: <Volume2 size={16} /> },
-                                { id: 'image', label: 'Images', icon: <Check size={16} /> }, // Using Check as placeholder
-                                { id: 'audio', label: 'Audio', icon: <Volume2 size={16} /> }
-                            ].map(type => (
-                                <button
-                                    key={type.id}
-                                    onClick={() => setFilters(prev => ({ ...prev, [type.id]: !prev[type.id] }))}
-                                    className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/5 text-sm active:scale-95 transition-transform"
-                                >
-                                    <span className="flex items-center gap-2 text-gray-300">
-                                        {type.icon} {type.label}
-                                    </span>
-                                    <div className={`w-5 h-5 rounded flex items-center justify-center transition-colors ${filters[type.id] ? 'bg-yellow-400' : 'bg-gray-800'}`}>
-                                        {filters[type.id] && <Check size={12} className="text-black" />}
-                                    </div>
-                                </button>
-                            ))}
+                <div className="my-6 border-t border-gray-800 mx-6"></div>
+
+                {/* FILTER SECTION (Tick/Untick) */}
+                <div className="px-6">
+                    <h3 className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-4">Content Filter</h3>
+                    <div className="flex flex-col gap-3">
+                        {/* Video Toggle */}
+                        <div
+                            onClick={() => setFilters(p => ({ ...p, video: !p.video }))}
+                            className="flex items-center justify-between cursor-pointer group"
+                        >
+                            <span className="flex items-center gap-2 font-medium text-gray-300 group-hover:text-white">
+                                <Play size={16} /> Videos
+                            </span>
+                            <div className={`w-5 h-5 rounded border ${filters.video ? 'bg-yellow-400 border-yellow-400' : 'border-gray-600'} flex items-center justify-center`}>
+                                {filters.video && <Check size={14} className="text-black stroke-[3]" />}
+                            </div>
+                        </div>
+
+                        {/* Image Toggle */}
+                        <div
+                            onClick={() => setFilters(p => ({ ...p, image: !p.image }))}
+                            className="flex items-center justify-between cursor-pointer group"
+                        >
+                            <span className="flex items-center gap-2 font-medium text-gray-300 group-hover:text-white">
+                                <div className="w-4 h-4 bg-gray-500 rounded-sm" /> Images
+                            </span>
+                            <div className={`w-5 h-5 rounded border ${filters.image ? 'bg-yellow-400 border-yellow-400' : 'border-gray-600'} flex items-center justify-center`}>
+                                {filters.image && <Check size={14} className="text-black stroke-[3]" />}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="text-xs text-gray-600 space-y-2">
-                    <p>© 2025 MemeHub HQ</p>
-                    <div className="flex flex-wrap gap-2 text-gray-500">
-                        <span>Terms</span> • <span>Privacy</span> • <span>Rules</span>
+                <div className="flex-1"></div>
+
+                {/* FOOTER LINKS (Hidden Main Footer, moved here) */}
+                <div className="p-6 text-[11px] text-gray-500 leading-relaxed border-t border-gray-800">
+                    <div className="flex flex-wrap gap-2 mb-2">
+                        <a href="#" className="hover:underline">About</a>
+                        <a href="#" className="hover:underline">Newsroom</a>
+                        <a href="#" className="hover:underline">Contact</a>
                     </div>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                        <a href="#" className="hover:underline">Terms</a>
+                        <a href="#" className="hover:underline">Privacy</a>
+                        <a href="#" className="hover:underline">Rules</a>
+                    </div>
+                    <p>© 2025 MemeHub HQ</p>
                 </div>
             </div>
 
-            {/* -- MAIN REEL FEED -- */}
-            <div className="flex-1 relative h-full">
-                {/* Scroll Container */}
+            {/* --- MAIN FEED AREA --- */}
+            <div className="flex-1 relative bg-[#121212]">
+
+                {/* Loading State */}
+                {loading && (
+                    <div className="absolute inset-0 flex items-center justify-center z-50">
+                        <div className="animate-spin w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full"></div>
+                    </div>
+                )}
+
+                {/* Desktop Nav Arrows (Outside video) */}
+                <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-40 hidden lg:flex">
+                    <button onClick={() => scrollTo(currentIndex - 1)} disabled={currentIndex === 0} className="p-3 bg-gray-800/50 hover:bg-gray-700 rounded-full text-white disabled:opacity-0 transition-all">
+                        <ChevronUp />
+                    </button>
+                    <button onClick={() => scrollTo(currentIndex + 1)} disabled={currentIndex === memes.length - 1} className="p-3 bg-gray-800/50 hover:bg-gray-700 rounded-full text-white disabled:opacity-0 transition-all">
+                        <ChevronDown />
+                    </button>
+                </div>
+
+                {/* SCROLL CONTAINER */}
                 <div
                     ref={containerRef}
                     onScroll={handleScroll}
-                    className="h-full w-full overflow-y-scroll snap-y snap-mandatory no-scrollbar scroll-smooth"
+                    className="h-full w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth no-scrollbar"
                 >
-                    {isLoading ? (
-                        <div className="h-full flex items-center justify-center">
-                            <div className="animate-spin w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full" />
-                        </div>
-                    ) : memes.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-center p-8">
-                            <p className="text-2xl font-bold text-gray-500 mb-4">No memes found matching filters.</p>
-                            <button onClick={() => setFilters({ video: true, image: true, audio: true })} className="text-yellow-400 underline">Reset Filters</button>
-                        </div>
-                    ) : (
-                        memes.map((meme, index) => (
-                            <div key={meme.id} className="h-screen w-full snap-start relative flex items-center justify-center bg-[#111]">
+                    {memes.map((meme, index) => (
+                        <div key={meme.id} className="h-screen w-full snap-start relative flex items-center justify-center overflow-hidden">
 
-                                {/* 1. Ambient Background (Blurred) */}
-                                <div className="absolute inset-0 opacity-30 pointer-events-none">
-                                    {meme.media_type === 'video' ? (
-                                        <video src={meme.file_url} className="w-full h-full object-cover blur-3xl" muted loop />
-                                    ) : (
-                                        <img src={meme.file_url} className="w-full h-full object-cover blur-3xl" />
-                                    )}
-                                </div>
+                            {/* 1. AMBIENT BACKGROUND (Desktop Blur) */}
+                            <div className="absolute inset-0 z-0">
+                                {meme.media_type === 'video' || meme.file_url?.endsWith('.mp4') ? (
+                                    <video src={meme.file_url} className="w-full h-full object-cover blur-[50px] opacity-40" muted />
+                                ) : (
+                                    <img src={meme.file_url} className="w-full h-full object-cover blur-[50px] opacity-40" />
+                                )}
+                                <div className="absolute inset-0 bg-black/20" /> {/* Overlay to darken bg */}
+                            </div>
 
-                                {/* 2. Main Content Player */}
-                                <div className="relative z-10 h-full w-full md:max-w-[450px] bg-black shadow-2xl flex flex-col justify-center">
-                                    {meme.media_type === 'video' || meme.file_url?.endsWith('.mp4') ? (
-                                        <video
-                                            ref={el => videoRefs.current[index] = el}
-                                            src={meme.file_url}
-                                            className="w-full h-full object-contain cursor-pointer"
-                                            loop
-                                            playsInline
-                                            onClick={(e) => e.target.paused ? e.target.play() : e.target.pause()}
-                                        />
-                                    ) : (
-                                        <img src={meme.file_url} className="w-full h-full object-contain" />
-                                    )}
+                            {/* 2. MAIN CONTENT (Centered) */}
+                            <div className="relative z-10 h-full w-full max-w-[500px] bg-black shadow-2xl flex flex-col justify-center">
+                                {meme.media_type === 'video' || meme.file_url?.endsWith('.mp4') ? (
+                                    <video
+                                        ref={el => videoRefs.current[index] = el}
+                                        src={meme.file_url}
+                                        className="w-full h-full object-contain"
+                                        loop
+                                        playsInline
+                                        onClick={(e) => e.target.paused ? e.target.play() : e.target.pause()}
+                                    />
+                                ) : (
+                                    <img src={meme.file_url} className="w-full h-full object-contain" />
+                                )}
 
-                                    {/* Overlay Info (Bottom) */}
-                                    <div className="absolute bottom-4 left-4 right-16 z-20 text-left">
-                                        <Link href={`/user/${meme.uploader_id}`} className="flex items-center gap-2 mb-3 group">
-                                            <img src={meme.uploader_pic || "https://ui-avatars.com/api/?name=User"} className="w-10 h-10 rounded-full border border-white group-hover:scale-110 transition-transform" />
-                                            <span className="font-bold text-shadow-sm hover:underline">{meme.uploader_name || 'Anonymous'}</span>
-                                        </Link>
-
-                                        <h2 className="text-white text-shadow-sm leading-snug mb-2 font-medium line-clamp-2">{meme.description || meme.title}</h2>
-
-                                        <div className="flex items-center gap-2 text-xs font-bold opacity-80 bg-white/10 px-3 py-1.5 rounded-full w-fit backdrop-blur-sm">
-                                            <Volume2 size={12} />
-                                            <span className="animate-marquee whitespace-nowrap overflow-hidden max-w-[150px]">
-                                                Original Sound - {meme.uploader_name} • MemeHub HQ
-                                            </span>
+                                {/* 3. BOTTOM INFO OVERLAY */}
+                                <div className="absolute bottom-0 left-0 w-full p-4 pb-8 bg-gradient-to-t from-black/90 via-black/40 to-transparent pt-24">
+                                    <div className="pr-16"> {/* Padding right so text doesnt hit buttons */}
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <h3 className="font-bold text-shadow hover:underline cursor-pointer">@{meme.uploader_name || 'User'}</h3>
+                                            <span className="text-blue-400 text-xs bg-blue-400/10 px-1 rounded">Editor</span>
+                                        </div>
+                                        <p className="text-white/90 text-sm mb-3 line-clamp-2">{meme.description || meme.title}</p>
+                                        <div className="flex items-center gap-2 text-xs text-white/70">
+                                            <Volume2 size={12} /> Original Audio
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* 3. Right Action Bar (Floating) */}
-                                <div className="absolute right-4 bottom-20 md:right-[calc(50%-280px)] md:bottom-20 z-30 flex flex-col gap-6 items-center pb-8">
+                                {/* 4. ACTION BUTTONS (Floating Right) */}
+                                <div className="absolute bottom-8 right-2 flex flex-col gap-5 items-center z-20">
 
-                                    {/* Reactions */}
-                                    <button className="flex flex-col items-center gap-1 group" onClick={() => handleReaction(meme)}>
-                                        <div className="p-3 bg-black/40 backdrop-blur-md rounded-full group-active:scale-90 transition-transform hover:bg-white/10">
-                                            <span className="text-2xl">😂</span>
+                                    {/* Profile Pic */}
+                                    <div className="relative mb-2">
+                                        <img src={meme.uploader_pic || `https://ui-avatars.com/api/?name=${meme.uploader_name || 'U'}`} className="w-10 h-10 rounded-full border border-white" />
+                                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-[#FE2C55] rounded-full p-0.5">
+                                            <div className="w-3 h-0.5 bg-white"></div> {/* Plus icon fake */}
                                         </div>
-                                        <span className="text-xs font-bold text-shadow">{meme.reactions?.haha || 0}</span>
+                                    </div>
+
+                                    {/* Haha React */}
+                                    <button className="flex flex-col items-center gap-1 group">
+                                        <div className="p-3 bg-white/10 backdrop-blur-sm rounded-full group-hover:bg-white/20 transition-all">
+                                            <span className="text-2xl group-active:scale-125 block transition-transform">😂</span>
+                                        </div>
+                                        <span className="text-xs font-bold shadow-black drop-shadow-md">{meme.reactions?.haha || 125}</span>
                                     </button>
 
                                     {/* Comments */}
                                     <button className="flex flex-col items-center gap-1 group">
-                                        <div className="p-3 bg-black/40 backdrop-blur-md rounded-full group-active:scale-90 transition-transform hover:bg-white/10 text-white">
-                                            <MessageCircle size={28} fill="white" />
+                                        <div className="p-3 bg-white/10 backdrop-blur-sm rounded-full group-hover:bg-white/20 transition-all">
+                                            <MessageCircle size={26} fill="white" className="text-white" />
                                         </div>
-                                        <span className="text-xs font-bold text-shadow">{meme.comments_count || 45}</span>
+                                        <span className="text-xs font-bold shadow-black drop-shadow-md">{meme.comments_count || 42}</span>
                                     </button>
 
-                                    {/* Bookmark */}
+                                    {/* Favorites */}
                                     <button className="flex flex-col items-center gap-1 group">
-                                        <div className="p-3 bg-black/40 backdrop-blur-md rounded-full group-active:scale-90 transition-transform hover:bg-white/10 text-white">
-                                            <Heart size={28} />
-                                            {/* Using Heart as generic 'save/like' icon request */}
+                                        <div className="p-3 bg-white/10 backdrop-blur-sm rounded-full group-hover:bg-white/20 transition-all">
+                                            <Heart size={26} className="text-white group-active:fill-red-500 group-active:text-red-500" />
                                         </div>
-                                        <span className="text-xs font-bold text-shadow">Save</span>
+                                        <span className="text-xs font-bold shadow-black drop-shadow-md">Save</span>
                                     </button>
 
                                     {/* Share */}
                                     <button className="flex flex-col items-center gap-1 group">
-                                        <div className="p-3 bg-black/40 backdrop-blur-md rounded-full group-active:scale-90 transition-transform hover:bg-white/10 text-white">
-                                            <Share2 size={28} />
+                                        <div className="p-3 bg-white/10 backdrop-blur-sm rounded-full group-hover:bg-white/20 transition-all">
+                                            <Share2 size={26} className="text-white" />
                                         </div>
-                                        <span className="text-xs font-bold text-shadow">Share</span>
+                                        <span className="text-xs font-bold shadow-black drop-shadow-md">Share</span>
                                     </button>
 
-                                    {/* Download (Highlight) */}
-                                    <button className="flex flex-col items-center gap-1 group mt-2">
-                                        <div className="p-3 bg-green-500 rounded-full group-active:scale-90 transition-transform hover:brightness-110 text-white shadow-lg shadow-green-500/20 animate-pulse-slow">
-                                            <Download size={24} />
+                                    {/* DOWNLOAD (Highlighted) */}
+                                    <button
+                                        onClick={() => toast.success("Downloading...")}
+                                        className="flex flex-col items-center gap-1 group mt-2"
+                                    >
+                                        <div className="p-3 bg-green-500 rounded-full hover:scale-110 transition-transform shadow-lg shadow-green-500/30 animate-pulse">
+                                            <Download size={24} className="text-white" />
                                         </div>
-                                        <span className="text-xs font-bold text-shadow text-green-400">DL</span>
+                                        <span className="text-xs font-bold text-green-400 shadow-black drop-shadow-md">DL</span>
                                     </button>
 
-                                    {/* Album Art / Spinner */}
-                                    <div className="mt-4 w-10 h-10 rounded-full bg-gray-800 border-4 border-black overflow-hidden animate-spin-slow">
-                                        <img src={meme.uploader_pic} className="w-full h-full object-cover" />
+                                    {/* Rotating Audio Disc */}
+                                    <div className="mt-4 w-10 h-10 bg-gray-900 rounded-full border-4 border-gray-800 overflow-hidden animate-spin-slow">
+                                        <img src={meme.uploader_pic || `https://ui-avatars.com/api/?name=${meme.uploader_name || 'U'}`} className="opacity-70" />
                                     </div>
                                 </div>
 
                             </div>
-                        ))
-                    )}
-                </div>
-
-                {/* Navigation Arrows (Desktop Overlay) */}
-                <div className="absolute right-8 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-4 z-40">
-                    <button
-                        onClick={goToPrev}
-                        className="p-3 bg-white/10 hover:bg-white/20 rounded-full backdrop-blur-md transition-all hover:scale-110 disabled:opacity-30 text-white"
-                        disabled={currentIndex === 0}
-                    >
-                        <ChevronUp size={24} />
-                    </button>
-                    <button
-                        onClick={goToNext}
-                        className="p-3 bg-white/10 hover:bg-white/20 rounded-full backdrop-blur-md transition-all hover:scale-110 disabled:opacity-30 text-white"
-                        disabled={currentIndex === memes.length - 1}
-                    >
-                        <ChevronDown size={24} />
-                    </button>
+                        </div>
+                    ))}
                 </div>
             </div>
-
         </div>
     );
 }
