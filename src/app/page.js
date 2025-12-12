@@ -705,6 +705,8 @@ function HomeContent() {
         router.push(`/meme/${meme.id}`);
     };
 
+    const [newClipFile, setNewClipFile] = useState(null); // State for new clip file
+
     // Edit Functions
     const openEditModal = (meme) => {
         setEditingMeme(meme);
@@ -717,6 +719,13 @@ function HomeContent() {
         });
         setNewThumbnail(null);
         setThumbnailPreview(null);
+        setNewClipFile(null); // Reset clip file
+    };
+
+    const handleClipChange = (e) => {
+        const selected = e.target.files[0];
+        if (!selected) return;
+        setNewClipFile(selected);
     };
 
     const handleThumbnailChange = (e) => {
@@ -740,14 +749,50 @@ function HomeContent() {
                 const thumbData = await thumbRes.json();
                 if (thumbData.secure_url) thumbnailUrl = thumbData.secure_url;
             }
-            await updateDoc(doc(db, "memes", editingMeme.id), {
+
+            // HANDLE CLIP RE-UPLOAD (ADMIN ONLY)
+            let newFileUrl = null;
+            let newMediaType = null;
+            let newFormat = null;
+
+            if (newClipFile) {
+                toast.loading("Uploading new clip...", { id: toastId });
+                const clipFormData = new FormData();
+                clipFormData.append("file", newClipFile);
+                clipFormData.append("upload_preset", UPLOAD_PRESET);
+
+                // Determine resource type
+                const isVideo = newClipFile.type.startsWith("video");
+                const isAudio = newClipFile.type.startsWith("audio");
+                const resourceType = isVideo ? "video" : (isAudio ? "video" : "image"); // Cloudinary treats audio as video usually
+
+                const clipRes = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`, { method: "POST", body: clipFormData });
+                const clipData = await clipRes.json();
+
+                if (clipData.secure_url) {
+                    newFileUrl = clipData.secure_url;
+                    newMediaType = isVideo ? "video" : (isAudio ? "audio" : "image");
+                    newFormat = clipData.format;
+                }
+            }
+
+            const updateData = {
                 title: editForm.title,
                 category: editForm.category,
                 language: editForm.language,
                 thumbnail_url: thumbnailUrl,
                 credit: editForm.credit || null,
                 tags: editForm.title.toLowerCase().split(" ")
-            });
+            };
+
+            // Only update file details if a new clip was uploaded
+            if (newFileUrl) {
+                updateData.file_url = newFileUrl;
+                updateData.media_type = newMediaType;
+                updateData.file_format = newFormat; // Update format just in case
+            }
+
+            await updateDoc(doc(db, "memes", editingMeme.id), updateData);
             setMemes(prev => prev.map(m => m.id === editingMeme.id ? { ...m, ...editForm, thumbnail_url: thumbnailUrl, credit: editForm.credit || null } : m));
             toast.success("Changes saved!", { id: toastId });
 
@@ -1225,6 +1270,18 @@ function HomeContent() {
                                         <div>
                                             <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Change Thumbnail</label>
                                             <input type="file" accept="image/*" onChange={handleThumbnailChange} className="w-full text-sm text-gray-500" />
+                                        </div>
+                                    )}
+
+                                    {/* Re-Upload Clip (Admin Only) */}
+                                    {isAdmin && (
+                                        <div className="mt-4 p-4 bg-yellow-400/10 rounded-xl border border-yellow-400/30">
+                                            <label className="block text-xs font-bold uppercase text-yellow-600 mb-2 flex items-center gap-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                                                Re-upload Media File (Admin)
+                                            </label>
+                                            <input type="file" accept="video/*,image/*,audio/*" onChange={handleClipChange} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-yellow-400 file:text-black hover:file:bg-yellow-500" />
+                                            <p className="text-[10px] text-gray-400 mt-1">Warning: This will overwrite the existing meme file.</p>
                                         </div>
                                     )}
                                 </div>
