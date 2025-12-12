@@ -147,16 +147,8 @@ export default function HeroSection({ user, googleLogin, router, memes: initialM
         }
     }, [isPlaying, currentMeme, isVideoLoaded]);
 
-    if (!currentMeme) {
-        return (
-            <section className="relative h-screen min-h-[600px] bg-[#050505] flex items-center justify-center pt-16">
-                <div className="animate-pulse flex flex-col items-center">
-                    <div className="h-4 w-32 bg-gray-800 rounded mb-4"></div>
-                    <div className="h-10 w-64 bg-gray-800 rounded mb-4"></div>
-                </div>
-            </section>
-        );
-    }
+    // NOTE: Removed loading skeleton to allow text to render immediately ("Smart Loading")
+    // if (!currentMeme) { ... }
 
     return (
         <section
@@ -169,44 +161,37 @@ export default function HeroSection({ user, googleLogin, router, memes: initialM
                 className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${isTransitioning ? "opacity-0" : "opacity-100"}`}
                 style={{ opacity: isTransitioning ? 0 : heroOpacity }}
             >
-                {/* A. BLURRED BACKGROUND FILL */}
-                <div className="absolute inset-0 overflow-hidden">
-                    {currentMeme.media_type === "video" || currentMeme.file_url.endsWith(".mp4") ? (
-                        <video
-                            ref={bgVideoRef}
-                            key={currentMeme.id + "_bg"}
-                            src={currentMeme.file_url}
-                            autoPlay={isPlaying}
-                            muted={true} // Always mute background to prevent echo
-                            playsInline
-                            crossOrigin="anonymous"
-                            preload="auto"
-                            onError={() => pickRandomMeme()} // Skip if error
-                            className="w-full h-full object-cover blur-2xl opacity-100 scale-125"
-                        // No loop here, follows main video logic implicitly via currentMeme change
-                        />
-                    ) : (
-                        <img
-                            key={currentMeme.id + "_bg"}
-                            src={currentMeme.thumbnail_url || currentMeme.file_url}
-                            className="w-full h-full object-cover blur-2xl opacity-100 scale-125"
-                            alt="back-blur"
-                        />
-                    )}
-                </div>
+                {/* A. BLURRED BACKGROUND FILL (Conditional) */}
+                {currentMeme && (
+                    <div className="absolute inset-0 overflow-hidden">
+                        {currentMeme.media_type === "video" || currentMeme.file_url.endsWith(".mp4") ? (
+                            <video
+                                ref={bgVideoRef}
+                                key={currentMeme.id + "_bg"}
+                                src={currentMeme.file_url}
+                                autoPlay={isPlaying}
+                                muted={true} // Always mute background to prevent echo
+                                playsInline
+                                crossOrigin="anonymous"
+                                preload="auto"
+                                onError={() => pickRandomMeme()} // Skip if error
+                                className={`w-full h-full object-cover blur-2xl scale-125 transition-opacity duration-1000 ${isVideoLoaded ? 'opacity-100' : 'opacity-0'}`}
+                            />
+                        ) : (
+                            <img
+                                key={currentMeme.id + "_bg"}
+                                src={currentMeme.thumbnail_url || currentMeme.file_url}
+                                className="w-full h-full object-cover blur-2xl opacity-100 scale-125"
+                                alt="back-blur"
+                            />
+                        )}
+                    </div>
+                )}
 
-                {/* B. MAIN CONTENT */}
+                {/* B. MAIN CONTENT (Conditional) */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                    {currentMeme.media_type === "video" || currentMeme.file_url.endsWith(".mp4") ? (
-                        <>
-                            {/* Dummy Thumbnail while Loading */}
-                            {!isVideoLoaded && (
-                                <img
-                                    src={currentMeme.thumbnail_url || currentMeme.file_url}
-                                    className="absolute inset-0 h-full w-auto max-w-full object-contain mx-auto z-10"
-                                    alt="loading-thumb"
-                                />
-                            )}
+                    {currentMeme && (
+                        (currentMeme.media_type === "video" || currentMeme.file_url.endsWith(".mp4")) ? (
                             <video
                                 ref={videoRef}
                                 key={currentMeme.id + "_main"}
@@ -221,14 +206,14 @@ export default function HeroSection({ user, googleLogin, router, memes: initialM
                                 onError={() => pickRandomMeme()} // Skip if error
                                 className={`h-full w-auto max-w-full object-contain shadow-2xl brightness-110 transition-opacity duration-500 ${isVideoLoaded ? 'opacity-100' : 'opacity-0'}`}
                             />
-                        </>
-                    ) : (
-                        <img
-                            key={currentMeme.id + "_main"}
-                            src={currentMeme.thumbnail_url || currentMeme.file_url}
-                            className="h-full w-auto max-w-full object-contain shadow-2xl brightness-110"
-                            alt={currentMeme.title}
-                        />
+                        ) : (
+                            <img
+                                key={currentMeme.id + "_main"}
+                                src={currentMeme.thumbnail_url || currentMeme.file_url}
+                                className="h-full w-auto max-w-full object-contain shadow-2xl brightness-110"
+                                alt={currentMeme.title}
+                            />
+                        )
                     )}
                 </div>
             </div>
