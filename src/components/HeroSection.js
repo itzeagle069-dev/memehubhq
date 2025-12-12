@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Sparkles, Volume2, VolumeX, Play, Pause } from "lucide-react";
 import { db } from "@/lib/firebase"; // Import db
 import { collection, query, where, orderBy, limit, getDocs } from "firebase/firestore"; // Import Firestore functions
