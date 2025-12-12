@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Sparkles, Volume2, VolumeX } from "lucide-react";
+import { useRef } from "react";
+import { Sparkles, Volume2, VolumeX, Play, Pause } from "lucide-react";
 import { db } from "@/lib/firebase"; // Import db
 import { collection, query, where, orderBy, limit, getDocs } from "firebase/firestore"; // Import Firestore functions
 
@@ -13,6 +13,11 @@ export default function HeroSection({ user, googleLogin, router, memes: initialM
     const [scrollY, setScrollY] = useState(0);
     const [isMuted, setIsMuted] = useState(true);
     const [userWantsAudio, setUserWantsAudio] = useState(false); // Track user intent
+    const [isPlaying, setIsPlaying] = useState(true);
+    const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+
+    const videoRef = useRef(null);
+    const bgVideoRef = useRef(null);
 
     // Scroll Listener & Auto-Mute/Resume
     useEffect(() => {
@@ -88,6 +93,7 @@ export default function HeroSection({ user, googleLogin, router, memes: initialM
             const random = available[Math.floor(Math.random() * available.length)];
 
             setCurrentMeme(random);
+            setIsVideoLoaded(false); // Reset loaded state for new meme
 
             if (resetHistory) {
                 setHistory([random.id]);
@@ -104,6 +110,7 @@ export default function HeroSection({ user, googleLogin, router, memes: initialM
         if (activePool && activePool.length > 0 && !currentMeme) {
             const random = activePool[Math.floor(Math.random() * activePool.length)];
             setCurrentMeme(random);
+            setIsVideoLoaded(false);
             setHistory([random.id]);
         }
     }, [activePool]);
@@ -127,6 +134,18 @@ export default function HeroSection({ user, googleLogin, router, memes: initialM
     const handleVideoEnded = (e) => {
         pickRandomMeme();
     };
+
+    // Sync Play/Pause with State
+    useEffect(() => {
+        if (videoRef.current) {
+            if (isPlaying) videoRef.current.play().catch(() => { });
+            else videoRef.current.pause();
+        }
+        if (bgVideoRef.current) {
+            if (isPlaying) bgVideoRef.current.play().catch(() => { });
+            else bgVideoRef.current.pause();
+        }
+    }, [isPlaying, currentMeme, isVideoLoaded]);
 
     if (!currentMeme) {
         return (
@@ -154,9 +173,10 @@ export default function HeroSection({ user, googleLogin, router, memes: initialM
                 <div className="absolute inset-0 overflow-hidden">
                     {currentMeme.media_type === "video" || currentMeme.file_url.endsWith(".mp4") ? (
                         <video
+                            ref={bgVideoRef}
                             key={currentMeme.id + "_bg"}
                             src={currentMeme.file_url}
-                            autoPlay
+                            autoPlay={isPlaying}
                             muted={true} // Always mute background to prevent echo
                             playsInline
                             crossOrigin="anonymous"
@@ -178,18 +198,30 @@ export default function HeroSection({ user, googleLogin, router, memes: initialM
                 {/* B. MAIN CONTENT */}
                 <div className="absolute inset-0 flex items-center justify-center">
                     {currentMeme.media_type === "video" || currentMeme.file_url.endsWith(".mp4") ? (
-                        <video
-                            key={currentMeme.id + "_main"}
-                            src={currentMeme.file_url}
-                            autoPlay
-                            muted={isMuted}
-                            playsInline
-                            crossOrigin="anonymous"
-                            preload="auto"
-                            onEnded={handleVideoEnded}
-                            onError={() => pickRandomMeme()} // Skip if error
-                            className="h-full w-auto max-w-full object-contain shadow-2xl brightness-110"
-                        />
+                        <>
+                            {/* Dummy Thumbnail while Loading */}
+                            {!isVideoLoaded && (
+                                <img
+                                    src={currentMeme.thumbnail_url || currentMeme.file_url}
+                                    className="absolute inset-0 h-full w-auto max-w-full object-contain mx-auto z-10"
+                                    alt="loading-thumb"
+                                />
+                            )}
+                            <video
+                                ref={videoRef}
+                                key={currentMeme.id + "_main"}
+                                src={currentMeme.file_url}
+                                autoPlay={isPlaying}
+                                muted={isMuted}
+                                playsInline
+                                crossOrigin="anonymous"
+                                preload="auto"
+                                onLoadedData={() => setIsVideoLoaded(true)}
+                                onEnded={handleVideoEnded}
+                                onError={() => pickRandomMeme()} // Skip if error
+                                className={`h-full w-auto max-w-full object-contain shadow-2xl brightness-110 transition-opacity duration-500 ${isVideoLoaded ? 'opacity-100' : 'opacity-0'}`}
+                            />
+                        </>
                     ) : (
                         <img
                             key={currentMeme.id + "_main"}
@@ -284,6 +316,17 @@ export default function HeroSection({ user, googleLogin, router, memes: initialM
                     <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
                     <span className="animate-pulse">Previewing • Click to Watch</span>
                 </div>
+
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsPlaying(!isPlaying);
+                    }}
+                    className="p-3 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white rounded-full backdrop-blur-md transition-all hover:scale-105 border border-white/5"
+                    title={isPlaying ? "Pause to save data" : "Play"}
+                >
+                    {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                </button>
 
                 {/* Mute Button */}
                 <button
