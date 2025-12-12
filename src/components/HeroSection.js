@@ -40,19 +40,37 @@ export default function HeroSection({ user, googleLogin, router, memes: initialM
     }, [userWantsAudio]); // Re-bind when intent changes
 
     // Fetch Random/Fresh Memes for Hero
+    // Fetch Random/Fresh Memes for Hero
     useEffect(() => {
         const fetchHeroMemes = async () => {
             try {
-                // Fetch Top 300 APPROVED memes to ensure a large pool (randomized client-side)
-                const q = query(collection(db, "memes"), where("status", "==", "approved"), orderBy("createdAt", "desc"), limit(300));
+                // Fetch Top 200 Latest memes (No 'where' clause to avoid index errors)
+                // We rely on client-side filtering for status and shuffle.
+                const q = query(
+                    collection(db, "memes"),
+                    orderBy("createdAt", "desc"),
+                    limit(200)
+                );
+
                 const snapshot = await getDocs(q);
-                let fetched = snapshot.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() }))
-                    .filter(m => m.media_type !== "audio" && m.media_type !== "raw" && !m.file_url.endsWith(".mp3"));
+                let fetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                // Simple Random Shuffle
-                fetched.sort(() => Math.random() - 0.5);
+                // 1. Filter Approved/Published
+                fetched = fetched.filter(m => m.status === "published" || m.status === "approved");
 
+                // 2. Filter Videos Only
+                fetched = fetched.filter(m => {
+                    const isVid = m.media_type === "video" || (m.file_url && (m.file_url.endsWith(".mp4") || m.file_url.endsWith(".webm")));
+                    return isVid;
+                });
+
+                // 3. Shuffle (Fisher-Yates)
+                for (let i = fetched.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [fetched[i], fetched[j]] = [fetched[j], fetched[i]];
+                }
+
+                console.log("Hero Shuffle Pool:", fetched.length);
                 setHeroMemes(fetched);
             } catch (error) {
                 console.error("Error fetching hero memes:", error);
