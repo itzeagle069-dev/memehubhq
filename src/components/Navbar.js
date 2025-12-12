@@ -19,8 +19,12 @@ export default function Navbar() {
     const { user, googleLogin, logout } = useAuth();
     const { downloadList, removeFromDownloadList, clearDownloadList } = useDownloadList();
     const router = useRouter();
-    const searchParams = useSearchParams();
     const pathname = usePathname();
+
+    // Hide Navbar on Reels page logic
+    if (pathname?.startsWith('/reels')) return null;
+    const searchParams = useSearchParams();
+    // const pathname = usePathname(); // Removed duplicate
 
     const [isScrolled, setIsScrolled] = useState(false);
     const [showMobileSearch, setShowMobileSearch] = useState(true);

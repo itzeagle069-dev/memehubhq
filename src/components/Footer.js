@@ -1,7 +1,13 @@
+"use client";
+
 import Link from "next/link";
 import { Facebook, Instagram, Heart, Youtube } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 export default function Footer() {
+    const pathname = usePathname();
+    if (pathname?.startsWith('/reels')) return null;
+
     return (
         <footer className="bg-white dark:bg-[#050505] border-t border-gray-200 dark:border-gray-800 mt-20">
             <div className="max-w-7xl mx-auto px-4 py-12">

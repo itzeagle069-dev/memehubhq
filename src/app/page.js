@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { TrendingUp, Smile, Video, Music, Sparkles, Download, Share2, Clock, Eye, X, Play, Trash2, MoreVertical, Edit2, Plus, Check, ShieldAlert, Star, ListPlus, CheckSquare, Square } from "lucide-react";
+import { TrendingUp, Smile, Video, Music, Sparkles, Download, Share2, Clock, Eye, X, Play, Trash2, MoreVertical, Edit2, Plus, Check, ShieldAlert, Star, ListPlus, CheckSquare, Square, Clapperboard } from "lucide-react";
 import { useEffect, useState, Suspense, useRef, useCallback, Fragment } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, limit, getDocs, updateDoc, doc, increment, arrayUnion, arrayRemove, deleteDoc, setDoc, getDoc, orderBy, startAfter } from "firebase/firestore";
