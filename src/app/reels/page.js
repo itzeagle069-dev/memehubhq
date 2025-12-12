@@ -33,15 +33,19 @@ export default function MemeReels() {
 
                 // A. TYPE FILTERING
                 let filtered = rawData.filter(m => {
-                    const isVid = m.media_type === 'video' || m.file_url?.endsWith('.mp4');
-                    const isImg = m.media_type === 'image' || (!isVid && !m.file_url?.endsWith('.mp3'));
+                    const url = m.file_url || m.url || '';
+                    const type = (m.media_type || m.type || '').toLowerCase();
+
+                    const isVid = type === 'video' || url.endsWith('.mp4') || url.endsWith('.webm');
+                    const isImg = type === 'image' || (!isVid && (url.endsWith('.jpg') || url.endsWith('.png') || url.endsWith('.gif') || url.endsWith('.webp')));
 
                     // Logic: Return true if the specific filter is ON and type matches
                     if (filters.video && isVid) return true;
                     if (filters.image && isImg) return true;
-                    // (Add audio logic if needed)
                     return false;
                 });
+
+                console.log("Reels Fetch:", { raw: rawData.length, filtered: filtered.length });
 
                 // B. THE "TIKTOK" SORTING ALGORITHM
                 // We calculate a 'Hot Score' for every meme, then shuffle slightly
@@ -198,6 +202,19 @@ export default function MemeReels() {
                 {loading && (
                     <div className="absolute inset-0 flex items-center justify-center z-50">
                         <div className="animate-spin w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full"></div>
+                    </div>
+                )}
+
+                {/* Empty State */}
+                {!loading && memes.length === 0 && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+                        <p className="text-xl mb-4">No content found.</p>
+                        <button
+                            onClick={() => setFilters({ video: true, image: true, audio: false })}
+                            className="bg-yellow-400 text-black px-4 py-2 rounded-lg font-bold"
+                        >
+                            Show All Types
+                        </button>
                     </div>
                 )}
 
