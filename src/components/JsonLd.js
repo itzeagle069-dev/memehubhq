@@ -25,6 +25,7 @@ export default function JsonLdSchema() {
         description: 'Discover viral memes, funny footage, and trending clips—all in one place! Free to browse and download, our platform helps content creators quickly find the perfect clips for their videos.',
         sameAs: [
             // Add your social media URLs
+            'https://youtube.com/@memehub-hq',
             'https://twitter.com/memehubhq',
             'https://facebook.com/memehubhq',
             'https://instagram.com/memehubhq'

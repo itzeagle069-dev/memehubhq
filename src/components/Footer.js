@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Facebook, Instagram, Heart } from "lucide-react";
+import { Facebook, Instagram, Heart, Youtube } from "lucide-react";
 
 export default function Footer() {
     return (
@@ -49,6 +49,7 @@ export default function Footer() {
                     <div>
                         <h3 className="font-bold text-black dark:text-white mb-4">Follow Us</h3>
                         <div className="flex gap-3">
+                            <SocialIcon href="https://youtube.com/@memehub-hq" icon={<Youtube size={20} />} label="YouTube" />
                             <SocialIcon href="https://facebook.com/PokhrelSantosh069" icon={<Facebook size={20} />} label="Facebook" />
                             <SocialIcon href="https://instagram.com" icon={<Instagram size={20} />} label="Instagram" />
                             <SocialIcon href="https://tiktok.com" icon={<TikTokIcon />} label="TikTok" />
