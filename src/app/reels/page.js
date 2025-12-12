@@ -26,18 +26,16 @@ export default function MemeReels() {
         const fetchContent = async () => {
             setLoading(true);
             try {
-                // Fetch memes ordered by creation time (Newest First)
-                // We AVOID using 'where("status")' here to prevent "Missing Index" errors.
-                // We filter status on the CLIENT side instead.
+                // Fetch a large pool of memes to simulate "All" (Randomized)
+                // We fetch 200 items without specific ordering to get a broad selection.
                 const q = query(
                     collection(db, "memes"),
-                    orderBy("createdAt", "desc"),
-                    limit(50)
+                    limit(200)
                 );
                 const snapshot = await getDocs(q);
                 let rawData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                // Filter for Published/Approved statuses on client side
+                // Filter for Approved/Published
                 rawData = rawData.filter(m => m.status === "published" || m.status === "approved");
 
                 // A. TYPE FILTERING
@@ -51,29 +49,21 @@ export default function MemeReels() {
                     // Logic: Return true if the specific filter is ON and type matches
                     if (filters.video && isVid) return true;
                     if (filters.image && isImg) return true;
+                    if (filters.audio && (type === 'audio' || url.endsWith('.mp3'))) return true;
                     return false;
                 });
 
-                console.log("Reels Fetch:", { raw: rawData.length, filtered: filtered.length });
+                // B. SHUFFLE THE FEED (Randomize)
+                // Fisher-Yates Shuffle
+                for (let i = filtered.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
+                }
 
-                // B. THE "TIKTOK" SORTING ALGORITHM
-                // We calculate a 'Hot Score' for every meme, then shuffle slightly
-                const scoredAndSorted = filtered.map(item => {
-                    // Weight Factors
-                    const viewsWeight = item.views || 0;
-                    const likesWeight = (item.likes || 0) * 10; // Likes are worth more
-                    const recencyBoost = new Date() - (item.createdAt?.toDate ? item.createdAt.toDate() : new Date()) < 604800000 ? 500 : 0; // Boost if < 1 week old
-                    const randomDiscovery = Math.random() * 1000; // The "Wildcard" factor
-
-                    return {
-                        ...item,
-                        score: viewsWeight + likesWeight + recencyBoost + randomDiscovery
-                    };
-                }).sort((a, b) => b.score - a.score); // Highest score first
-
-                setMemes(scoredAndSorted);
+                setMemes(filtered);
             } catch (err) {
                 console.error(err);
+                toast.error("Could not load reels");
             } finally {
                 setLoading(false);
             }
