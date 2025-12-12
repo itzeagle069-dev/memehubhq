@@ -1,4 +1,5 @@
 import "./globals.css";
+import Script from "next/script";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { AuthContextProvider } from "@/context/AuthContext";
@@ -124,6 +125,21 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <JsonLdSchema />
+        {/* Global site tag (gtag.js) - Google Analytics */}
+        <Script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-DV9FXHK1ZY"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-DV9FXHK1ZY');
+          `}
+        </Script>
       </head>
       <body suppressHydrationWarning={true} className={`${inter.className} antialiased bg-white dark:bg-[#050505] text-black dark:text-white transition-colors duration-300`}>
         <AuthContextProvider>
