@@ -49,11 +49,11 @@ export default function Footer() {
                     <div>
                         <h3 className="font-bold text-black dark:text-white mb-4">Follow Us</h3>
                         <div className="flex gap-3">
-                            <SocialIcon href="https://youtube.com/@memehub-hq" icon={<Youtube size={20} />} label="YouTube" />
                             <SocialIcon href="https://facebook.com/PokhrelSantosh069" icon={<Facebook size={20} />} label="Facebook" />
-                            <SocialIcon href="https://instagram.com" icon={<Instagram size={20} />} label="Instagram" />
-                            <SocialIcon href="https://tiktok.com" icon={<TikTokIcon />} label="TikTok" />
-                            <SocialIcon href="https://discord.com" icon={<DiscordIcon />} label="Discord" />
+                            <SocialIcon href="https://www.instagram.com/ramrashik008/" icon={<Instagram size={20} />} label="Instagram" />
+                            <SocialIcon href="https://www.tiktok.com/@memehubhq7?is_from_webapp=1&sender_device=pc" icon={<TikTokIcon />} label="TikTok" />
+                            <SocialIcon href="https://t.me/PokhrelSantosh069" icon={<TelegramIcon />} label="Telegram" />
+                            <SocialIcon href="https://youtube.com/@memehub-hq" icon={<Youtube size={20} />} label="YouTube" />
                         </div>
                     </div>
                 </div>
@@ -93,10 +93,10 @@ function TikTokIcon() {
     );
 }
 
-function DiscordIcon() {
+function TelegramIcon() {
     return (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-            <path d="M7.25 18.25V18.25C7.25 18.25 8.66998 19.5 10.5 19.5C12.33 19.5 13.75 18.25 13.75 18.25V18.25M15.5 15.5C15.5 15.5 17 14 17 11.5C17 9 15.5 7.5 15.5 7.5H5.5C5.5 7.5 4 9 4 11.5C4 14 5.5 15.5 5.5 15.5M15.5 15.5H5.5M7.5 10.5H7.51M13.5 10.5H13.51" />
+            <path d="M21.198 2.433a2.242 2.242 0 0 0-1.022.215l-8.609 3.33c-2.068.8-4.133 1.598-5.724 2.21a405.15 405.15 0 0 1-2.863 1.13l-4.203 1.625c-.259.08-.271.085-.3.1l-.1.066c-.035.03-.095.07-.123.15-.055.16-.01.405.116.634.09.16.27.31.57.433.207.085.9.362 2.062.834 1.162.47 2.085.845 2.124.86l.04.015 3.32 10.93c.063.208.2.392.387.48a.59.59 0 0 0 .543-.016c.15-.078.266-.217.31-.383l1.838-6.702c2.023 1.488 4.295 3.197 4.965 3.655.22.15.532.366.953.336.566-.04.755-.54.852-1.218 0-.005.65-4.48 1.34-9.336.345-2.428.667-4.698.796-5.834.02-.206.035-.387.046-.534.008-.103.012-.22-.008-.34a.656.656 0 0 0-.348-.352 1.39 1.39 0 0 0-.566-.056z" fill="currentColor" stroke="none" />
         </svg>
     );
 }
