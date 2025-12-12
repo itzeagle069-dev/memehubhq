@@ -941,7 +941,15 @@ function HomeContent() {
         return items;
     };
 
-    const displayItems = getDisplayItems(memes);
+    // Client-side visual sort override for Case Insensitive A-Z
+    const getSortedMemes = () => {
+        if (sortBy === "a_z") {
+            return [...memes].sort((a, b) => (a.title || "").localeCompare(b.title || "", undefined, { sensitivity: 'base' }));
+        }
+        return memes;
+    };
+
+    const displayItems = getDisplayItems(getSortedMemes());
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#050505] text-black dark:text-white pb-20">
