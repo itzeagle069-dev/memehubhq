@@ -72,7 +72,7 @@ export const metadata = {
     url: 'https://memehubhq.vercel.app',
     title: 'MemeHub HQ: Find & Download Trending Memes, Clips & Audio for Video Content',
     description: 'Discover viral memes, funny footage, and trending clips—all in one place! Free to browse and download, our platform helps content creators quickly find the perfect clips for their videos.',
-    siteName: 'MemeHub HQ',
+    siteName: 'MemeHubHQ',
     images: [
       {
         url: '/og-image.png', // Create this 1200x630 image
@@ -101,8 +101,11 @@ export const metadata = {
     },
   },
   icons: {
-    icon: '/favicon.png',
-    apple: '/favicon.png', // Using the same png for now, ideally should be specific size
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    apple: '/apple-touch-icon.png',
   },
   manifest: '/manifest.json',
   alternates: {

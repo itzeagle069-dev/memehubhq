@@ -2,9 +2,9 @@ export default function JsonLdSchema() {
     const websiteSchema = {
         '@context': 'https://schema.org',
         '@type': 'WebSite',
-        name: 'MemeHub HQ',
-        alternateName: 'Meme Hub HQ',
-        url: 'https://memehubhq.vercel.app',
+        name: 'MemeHubHQ',
+        alternateName: ['Meme Hub', 'MemeHub HQ'],
+        url: 'https://memehubhq.vercel.app/',
         description: 'Discover viral memes, funny footage, and trending clips—all in one place! Free to browse and download, our platform helps content creators quickly find the perfect clips for their videos.',
         potentialAction: {
             '@type': 'SearchAction',
