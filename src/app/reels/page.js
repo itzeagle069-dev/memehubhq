@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { ArrowLeft, Send, Heart, MessageCircle, Share2, MoreHorizontal, ChevronUp, ChevronDown, Check, Volume2, VolumeX, Download } from "lucide-react";
+import { ArrowLeft, Send, Heart, MessageCircle, Share2, MoreHorizontal, ChevronUp, ChevronDown, Check, Volume2, VolumeX, Download, X } from "lucide-react";
 import Link from "next/link";
 import { db, auth } from "@/lib/firebase";
 import { collection, query, where, getDocs, doc, updateDoc, arrayUnion, arrayRemove, increment } from "firebase/firestore";
@@ -128,6 +128,14 @@ export default function ReelModeConfig() {
 
     return (
         <div className="flex h-screen w-screen bg-black text-white overflow-hidden font-sans">
+
+            {/* Top Right Close Button (For easy exit on Mobile/Desktop) */}
+            <Link
+                href="/"
+                className="fixed top-4 right-4 z-50 p-2 bg-black/50 backdrop-blur-md rounded-full text-white hover:bg-white/20 transition-colors"
+            >
+                <X size={24} />
+            </Link>
 
             {/* -- LEFT SIDEBAR (TikTok Style Navigation) -- */}
             <div className="hidden md:flex flex-col justify-between w-64 p-4 border-r border-white/10 z-20 bg-black">
