@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, query, where, limit, getDocs, addDoc, deleteDoc, updateDoc, increment, arrayUnion, arrayRemove, orderBy, setDoc } from "firebase/firestore";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
-import { ArrowLeft, Eye, Download, Share2, Star, Music, MessageCircle, Send, Trash2, ThumbsUp, UserPlus, UserCheck, Play, Heart, Smile } from "lucide-react";
+import { ArrowLeft, Eye, Download, Share2, Star, Music, MessageCircle, Send, Trash2, ThumbsUp, UserPlus, UserCheck, Play, Heart, Smile, X, MoreHorizontal, ChevronDown, Volume2, VolumeX } from "lucide-react";
+import MemeGridItem from "@/components/MemeGridItem";
+import { useDownloadList } from "@/context/DownloadContext";
 
 export default function MemePage() {
     const params = useParams();
@@ -28,6 +30,23 @@ export default function MemePage() {
     // Download timer states
     const [downloadUnlocked, setDownloadUnlocked] = useState(false);
     const [downloadTimer, setDownloadTimer] = useState(5);
+    const [userFavorites, setUserFavorites] = useState([]);
+    const [showDownloadOptions, setShowDownloadOptions] = useState(false);
+
+    const { addToDownloadList, removeFromDownloadList, isInDownloadList } = useDownloadList();
+
+    // Fetch User Favorites (For Grid)
+    useEffect(() => {
+        if (user) {
+            const fetchFavorites = async () => {
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    setUserFavorites(userDoc.data().favorites || []);
+                }
+            };
+            fetchFavorites();
+        }
+    }, [user]);
 
     // Fetch meme data
     useEffect(() => {
@@ -41,7 +60,7 @@ export default function MemePage() {
                     setMeme(memeData);
 
                     // Increment view count
-                    await updateDoc(doc(db, "memes", memeId), {
+                    updateDoc(doc(db, "memes", memeId), {
                         views: increment(1)
                     });
 
@@ -127,12 +146,12 @@ export default function MemePage() {
         }
     };
 
-    // Fetch related memes
+    // Fetch related memes (More from User)
     const fetchRelatedMemes = async (currentMeme) => {
         try {
             const q = query(
                 collection(db, "memes"),
-                where("category", "==", currentMeme.category),
+                where("uploader_id", "==", currentMeme.uploader_id),
                 where("status", "==", "published"),
                 limit(8)
             );
@@ -347,9 +366,79 @@ export default function MemePage() {
         return 0;
     });
 
+    // --- GRID HANDLERS ---
+    const handleGridReaction = async (e, targetMeme) => {
+        e.stopPropagation();
+        if (!user) return toast.error("Please login to react");
+        try {
+            const hasReacted = targetMeme.reactedBy?.includes(user.uid);
+            await updateDoc(doc(db, "memes", targetMeme.id), {
+                "reactions.haha": increment(hasReacted ? -1 : 1),
+                reactedBy: hasReacted ? arrayRemove(user.uid) : arrayUnion(user.uid)
+            });
+            // Update local state for related memes
+            setRelatedMemes(prev => prev.map(m => {
+                if (m.id === targetMeme.id) {
+                    return {
+                        ...m,
+                        reactions: { ...m.reactions, haha: (m.reactions?.haha || 0) + (hasReacted ? -1 : 1) },
+                        reactedBy: hasReacted ? m.reactedBy.filter(id => id !== user.uid) : [...(m.reactedBy || []), user.uid]
+                    };
+                }
+                return m;
+            }));
+        } catch (error) {
+            console.error("Grid reaction error", error);
+        }
+    };
+
+    const handleGridDownload = async (e, targetMeme) => {
+        e.stopPropagation();
+        try {
+            await updateDoc(doc(db, "memes", targetMeme.id), { downloads: increment(1) });
+            setRelatedMemes(prev => prev.map(m => m.id === targetMeme.id ? { ...m, downloads: (m.downloads || 0) + 1 } : m));
+            const response = await fetch(targetMeme.file_url);
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${targetMeme.title}.${targetMeme.media_type === 'video' ? 'mp4' : 'jpg'}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error("Grid download error", error);
+            window.open(targetMeme.file_url, '_blank');
+        }
+    };
+
+    const handleGridFavorite = async (e, targetMeme) => {
+        e.stopPropagation();
+        if (!user) return toast.error("Please login to favorite");
+        const isFav = userFavorites.includes(targetMeme.id);
+        const newFavs = isFav ? userFavorites.filter(id => id !== targetMeme.id) : [...userFavorites, targetMeme.id];
+        setUserFavorites(newFavs);
+        try {
+            await updateDoc(doc(db, "users", user.uid), {
+                favorites: isFav ? arrayRemove(targetMeme.id) : arrayUnion(targetMeme.id)
+            });
+            toast.success(isFav ? "Removed from favorites" : "Added to favorites");
+        } catch {
+            setUserFavorites(prev => isFav ? [...prev, targetMeme.id] : prev.filter(id => id !== targetMeme.id));
+        }
+    };
+
+    const handleGridShare = (e, targetMeme) => {
+        e.stopPropagation();
+        const shareUrl = `${window.location.origin}/?meme=${targetMeme.id}`;
+        navigator.clipboard.writeText(shareUrl);
+        toast.success("Link copied to clipboard!");
+    };
+
+
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-[#050505] flex items-center justify-center">
+            <div className="min-h-screen bg-white dark:bg-[#050505] flex items-center justify-center">
                 <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
             </div>
         );
@@ -358,9 +447,9 @@ export default function MemePage() {
     if (!meme) return null;
 
     return (
-        <div className="min-h-screen bg-white dark:bg-[#050505] text-black dark:text-white pt-16">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#050505] text-black dark:text-white pt-20 pb-10">
             {/* Header */}
-            <div className="bg-white dark:bg-[#111] border-b border-gray-200 dark:border-[#222] sticky top-16 z-40 backdrop-blur-md bg-opacity-95 dark:bg-opacity-95">
+            <div className="bg-white dark:bg-[#111] border-b border-gray-200 dark:border-[#222] fixed top-16 left-0 right-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
                     <button
                         onClick={() => router.back()}
@@ -389,291 +478,250 @@ export default function MemePage() {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Main Content - Left 2/3 */}
-                <div className="lg:col-span-2 space-y-6">
-                    {/* Media Player */}
-                    <div className="bg-black rounded-2xl overflow-hidden shadow-2xl">
-                        <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-gray-900 to-black">
+            <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-8 pt-6">
+
+                {/* --- LEFT: MEDIA & INFO (8/12 cols) --- */}
+                <div className="lg:col-span-8 space-y-6">
+                    {/* Media Player Container */}
+                    <div className="bg-white dark:bg-black rounded-3xl overflow-hidden shadow-xl border border-gray-200 dark:border-gray-800 relative">
+                        {/* Centered Media */}
+                        <div className="w-full bg-black/5 dark:bg-[#080808] flex items-center justify-center min-h-[300px] lg:min-h-[500px]">
                             {meme.media_type === "video" || meme.file_url.endsWith(".mp4") ? (
-                                <video src={meme.file_url} controls className="w-full h-full" poster={meme.thumbnail_url || ""} />
+                                <video
+                                    src={meme.file_url}
+                                    controls
+                                    autoPlay
+                                    loop
+                                    className="w-full h-auto max-h-[80vh] object-contain"
+                                    poster={meme.thumbnail_url || ""}
+                                />
                             ) : meme.media_type === "audio" || meme.media_type === "raw" ? (
-                                <div className="text-center p-8 w-full">
-                                    {meme.thumbnail_url && <img src={meme.thumbnail_url} className="max-w-md max-h-64 mx-auto mb-6 rounded-lg shadow-xl" />}
-                                    <Music className="w-24 h-24 text-yellow-400 mx-auto mb-6 animate-pulse" />
-                                    <audio src={meme.file_url} controls className="w-full max-w-md mx-auto" autoPlay />
+                                <div className="p-10 text-center w-full">
+                                    {meme.thumbnail_url && (
+                                        <img src={meme.thumbnail_url} className="w-48 h-48 mx-auto mb-6 rounded-xl shadow-lg object-cover" />
+                                    )}
+                                    <Music className="w-16 h-16 text-yellow-500 mx-auto mb-4 animate-pulse" />
+                                    <audio src={meme.file_url} controls className="w-full max-w-sm mx-auto" />
                                 </div>
                             ) : (
-                                <img src={meme.file_url} alt={meme.title} className="max-w-full max-h-full object-contain" />
+                                <img
+                                    src={meme.file_url}
+                                    alt={meme.title}
+                                    className="w-full h-auto max-h-[80vh] object-contain"
+                                />
                             )}
                         </div>
                     </div>
 
-                    {/* Meme Info Card */}
-                    <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-[#252525] overflow-hidden shadow-lg">
-                        {/* Title & Category */}
-                        <div className="p-6 border-b border-gray-100 dark:border-[#252525]">
-                            <div className="flex items-start justify-between gap-4 mb-3">
-                                <h1 className="text-2xl md:text-3xl font-black flex-1">{meme.title}</h1>
-                                <span className="px-3 py-1.5 rounded-full bg-yellow-400/20 text-yellow-600 dark:text-yellow-400 text-xs font-bold uppercase whitespace-nowrap">
-                                    {meme.category}
-                                </span>
+                    {/* Info Card */}
+                    <div className="bg-white dark:bg-[#151515] p-6 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-800">
+                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
+                            <div>
+                                <h1 className="text-2xl md:text-3xl font-black mb-2 leading-tight">{meme.title}</h1>
+                                <div className="flex flex-wrap gap-2 text-sm text-gray-500">
+                                    <span className="bg-gray-100 dark:bg-[#222] px-3 py-1 rounded-full text-xs font-bold uppercase">{meme.category}</span>
+                                    <span>•</span>
+                                    <span>{new Date(meme.createdAt?.toDate ? meme.createdAt.toDate() : meme.createdAt).toLocaleDateString()}</span>
+                                </div>
                             </div>
 
-                            {/* Stats Bar */}
-                            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                                <span className="flex items-center gap-1.5 font-medium">
-                                    <Eye size={16} className="text-blue-500" />
-                                    {meme.views || 0} views
-                                </span>
-                                <span className="flex items-center gap-1.5 font-medium">
-                                    <Download size={16} className="text-green-500" />
-                                    {meme.downloads || 0} downloads
-                                </span>
-                                <span className="flex items-center gap-1.5 font-medium">
-                                    <Smile size={16} className="text-yellow-500" />
-                                    {meme.reactions?.haha || 0} reactions
-                                </span>
-                                {meme.createdAt && (
-                                    <span className="flex items-center gap-1.5 font-medium">
-                                        📅 {meme.createdAt?.toDate?.()?.toLocaleDateString() || "Recently"}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* User Info & Follow */}
-                        <div className="p-6 border-b border-gray-100 dark:border-[#252525]">
-                            <div className="flex items-center justify-between gap-4">
-                                <Link href={`/user/${meme.uploader_id}`} className="flex items-center gap-3 hover:opacity-70 transition-opacity">
-                                    <img src={meme.uploader_pic || "https://ui-avatars.com/api/?name=User"} alt={meme.uploader_name} className="w-12 h-12 rounded-full ring-2 ring-gray-200 dark:ring-gray-700" />
-                                    <div>
-                                        <p className="font-bold text-base">{meme.uploader_name}</p>
-                                        <p className="text-xs text-gray-500">{followerCount} followers</p>
-                                    </div>
-                                </Link>
-
-                                {user?.uid !== meme.uploader_id && (
-                                    <button
-                                        onClick={handleFollow}
-                                        className={`px-5 py-2.5 rounded-full font-bold text-sm transition-all flex items-center gap-2 shadow-lg hover:scale-105 ${isFollowing
-                                            ? "bg-gray-200 dark:bg-gray-800 text-black dark:text-white hover:bg-gray-300 dark:hover:bg-gray-700"
-                                            : "bg-yellow-400 text-black hover:bg-yellow-500"
-                                            }`}
-                                    >
-                                        {isFollowing ? <UserCheck size={16} /> : <UserPlus size={16} />}
-                                        {isFollowing ? "Following" : "Follow"}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Description */}
-                        {meme.description && (
-                            <div className="p-6 border-b border-gray-100 dark:border-[#252525]">
-                                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{meme.description}</p>
-                            </div>
-                        )}
-
-                        {/* Tags */}
-                        <div className="p-6 border-b border-gray-100 dark:border-[#252525]">
-                            <div className="flex flex-wrap gap-2">
-                                <span className="px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-xs font-bold">
-                                    {meme.language}
-                                </span>
-                                {meme.tags?.map(tag => (
-                                    <span key={tag} className="px-3 py-1.5 rounded-full bg-yellow-400/10 text-yellow-600 dark:text-yellow-400 text-xs font-bold">
-                                        #{tag}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="p-6">
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="flex items-center gap-3">
+                                {/* Reaction Button */}
                                 <button
                                     onClick={handleReaction}
-                                    className={`py-3.5 rounded-xl font-bold text-sm transition-all hover:scale-105 shadow-lg flex items-center justify-center gap-2 ${meme.reactedBy?.includes(user?.uid)
-                                        ? "bg-gradient-to-r from-yellow-400 to-yellow-500 text-black"
-                                        : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
-                                        }`}
+                                    className={`px-6 py-3 rounded-full font-bold flex items-center gap-2 transition-transform active:scale-95 ${meme.reactedBy?.includes(user?.uid)
+                                        ? "bg-yellow-400 text-black"
+                                        : "bg-gray-100 dark:bg-[#222] hover:bg-gray-200 dark:hover:bg-[#333]"}`}
                                 >
-                                    <Smile size={18} />
-                                    {meme.reactedBy?.includes(user?.uid) ? "Reacted" : "React"} ({meme.reactions?.haha || 0})
+                                    <span className="text-xl">😂</span>
+                                    {meme.reactions?.haha || 0}
                                 </button>
 
+                                {/* Download Button */}
                                 <button
                                     onClick={handleDownload}
                                     disabled={!downloadUnlocked}
-                                    className={`py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg flex items-center justify-center gap-2 ${!downloadUnlocked
-                                        ? "bg-gray-200 dark:bg-gray-800 cursor-not-allowed text-gray-500"
-                                        : "bg-gradient-to-r from-green-400 to-green-500 text-white hover:scale-105"
-                                        }`}
+                                    className={`px-6 py-3 rounded-full font-bold flex items-center gap-2 transition-transform active:scale-95 text-black ${!downloadUnlocked
+                                        ? "bg-gray-400 cursor-wait text-white"
+                                        : "bg-yellow-400 hover:bg-yellow-500 shadow-lg shadow-yellow-400/20"}`}
                                 >
-                                    {!downloadUnlocked ? (
-                                        <>
-                                            <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />
-                                            Wait {downloadTimer}s
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Download size={18} />
-                                            Download
-                                        </>
-                                    )}
+                                    {downloadUnlocked ? <Download size={20} /> : <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />}
+                                    {downloadUnlocked ? "Download" : `${downloadTimer}s`}
                                 </button>
+                            </div>
+                        </div>
+
+                        {/* Uploader & Description */}
+                        <div className="flex items-start gap-4 pt-6 border-t border-gray-100 dark:border-gray-800">
+                            <Link href={`/user/${meme.uploader_id}`}>
+                                <img src={meme.uploader_pic || "https://ui-avatars.com/api/?name=User"} className="w-12 h-12 rounded-full border-2 border-gray-100 dark:border-gray-700 hover:border-yellow-400 transition-colors object-cover" />
+                            </Link>
+                            <div className="flex-1">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div>
+                                        <Link href={`/user/${meme.uploader_id}`} className="font-bold text-lg hover:text-yellow-500 transition-colors">
+                                            {meme.uploader_name}
+                                        </Link>
+                                        <p className="text-xs text-gray-500">{followerCount} Followers</p>
+                                    </div>
+                                    {user?.uid !== meme.uploader_id && (
+                                        <button
+                                            onClick={handleFollow}
+                                            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${isFollowing
+                                                ? "bg-gray-100 dark:bg-[#222] text-black dark:text-white"
+                                                : "bg-black dark:bg-white text-white dark:text-black"}`}
+                                        >
+                                            {isFollowing ? "Following" : "Follow"}
+                                        </button>
+                                    )}
+                                </div>
+                                <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm">
+                                    {meme.description || "No description provided."}
+                                </p>
                             </div>
                         </div>
                     </div>
 
                     {/* Comments Section */}
-                    <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-[#252525] p-6 space-y-6 shadow-lg">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-xl font-black flex items-center gap-2">
-                                <MessageCircle size={22} className="text-blue-500" />
-                                Comments <span className="text-sm font-normal text-gray-500">({comments.length})</span>
-                            </h3>
-
-                            <select
-                                value={commentSort}
-                                onChange={(e) => setCommentSort(e.target.value)}
-                                className="px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm border-none outline-none focus:ring-2 focus:ring-yellow-400"
-                            >
-                                <option value="newest">Newest</option>
-                                <option value="oldest">Oldest</option>
-                                <option value="likes">Most Liked</option>
-                            </select>
+                    <div className="bg-white dark:bg-[#151515] p-6 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-800">
+                        <div className="flex items-center gap-2 mb-6">
+                            <MessageCircle size={20} className="text-yellow-500" />
+                            <h3 className="font-bold text-lg">Comments ({comments.length})</h3>
                         </div>
 
-                        {/* Add Comment */}
-                        {user ? (
-                            <div className="flex gap-3">
-                                <img src={user.photoURL || "https://ui-avatars.com/api/?name=User"} alt={user.displayName} className="w-10 h-10 rounded-full flex-shrink-0 ring-2 ring-gray-200 dark:ring-gray-700" />
-                                <div className="flex-1 flex gap-2">
-                                    <input
-                                        type="text"
-                                        placeholder="Add a comment..."
-                                        value={newComment}
-                                        onChange={(e) => setNewComment(e.target.value)}
-                                        onKeyPress={(e) => e.key === "Enter" && handleAddComment()}
-                                        className="flex-1 px-4 py-3 rounded-full bg-gray-100 dark:bg-gray-800 outline-none focus:ring-2 focus:ring-yellow-400 transition-all"
-                                    />
-                                    <button
-                                        onClick={handleAddComment}
-                                        className="p-3 rounded-full bg-yellow-400 text-black hover:bg-yellow-500 transition-all hover:scale-110 shadow-lg"
-                                    >
-                                        <Send size={18} />
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="text-center py-8 bg-gray-50 dark:bg-gray-900 rounded-xl">
-                                <p className="text-gray-500 mb-4">Please login to comment</p>
-                                <button
-                                    onClick={googleLogin}
-                                    className="px-6 py-3 bg-yellow-400 text-black rounded-full font-bold hover:bg-yellow-500 transition-all hover:scale-105 shadow-lg"
-                                >
-                                    Login with Google
+                        {/* Comment Input */}
+                        <div className="flex gap-3 mb-8">
+                            {user ? (
+                                <>
+                                    <img src={user.photoURL} className="w-10 h-10 rounded-full object-cover" />
+                                    <div className="flex-1 relative">
+                                        <input
+                                            type="text"
+                                            value={newComment}
+                                            onChange={(e) => setNewComment(e.target.value)}
+                                            onKeyPress={(e) => e.key === "Enter" && handleAddComment()}
+                                            placeholder="Write a comment..."
+                                            className="w-full bg-gray-100 dark:bg-[#222] rounded-2xl px-5 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all font-medium"
+                                        />
+                                        <button
+                                            onClick={handleAddComment}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-yellow-400 rounded-xl hover:bg-yellow-500 transition-colors text-black"
+                                        >
+                                            <Send size={16} />
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (
+                                <button onClick={googleLogin} className="w-full py-3 bg-gray-100 dark:bg-[#222] rounded-2xl text-sm font-bold text-gray-500 hover:bg-gray-200 dark:hover:bg-[#333] transition-colors">
+                                    Log in to join the discussion
                                 </button>
-                            </div>
-                        )}
+                            )}
+                        </div>
 
                         {/* Comments List */}
-                        <div className="space-y-4 mt-6">
-                            {sortedComments.map(comment => (
-                                <div key={comment.id} className="flex gap-3 group">
-                                    <img src={comment.userPic || "https://ui-avatars.com/api/?name=User"} alt={comment.userName} className="w-10 h-10 rounded-full flex-shrink-0 ring-2 ring-gray-200 dark:ring-gray-700" />
+                        <div className="space-y-6">
+                            {comments.map(c => (
+                                <div key={c.id} className="flex gap-3 group">
+                                    <img src={c.userPic || "https://ui-avatars.com/api/?name=User"} className="w-10 h-10 rounded-full object-cover" />
                                     <div className="flex-1">
-                                        <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl px-4 py-3 group-hover:bg-gray-100 dark:group-hover:bg-gray-800 transition-colors">
-                                            <p className="font-bold text-sm mb-1">{comment.userName}</p>
-                                            <p className="text-sm leading-relaxed">{comment.text}</p>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="font-bold text-sm">{c.userName}</span>
+                                            <span className="text-xs text-gray-500">{new Date(c.timestamp?.toDate()).toLocaleDateString()}</span>
                                         </div>
-                                        <div className="flex items-center gap-4 mt-2 px-4 text-xs text-gray-500">
-                                            <button className="hover:text-yellow-500 transition-colors flex items-center gap-1 font-medium">
-                                                <ThumbsUp size={12} />
-                                                {comment.likes || 0}
+                                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-[#222] p-3 rounded-r-2xl rounded-bl-2xl inline-block">
+                                            {c.text}
+                                        </p>
+                                        {user?.uid === c.userId && (
+                                            <button onClick={() => handleDeleteComment(c.id)} className="text-xs text-red-500 hover:text-red-600 mt-1 ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                Delete
                                             </button>
-                                            <span>{comment.timestamp?.toDate().toLocaleDateString()}</span>
-                                            {user?.uid === comment.userId && (
-                                                <button
-                                                    onClick={() => handleDeleteComment(comment.id)}
-                                                    className="hover:text-red-500 transition-colors flex items-center gap-1 font-medium"
-                                                >
-                                                    <Trash2 size={12} />
-                                                    Delete
-                                                </button>
-                                            )}
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
                             ))}
-                            {comments.length === 0 && (
-                                <div className="text-center py-12 text-gray-400">
-                                    <MessageCircle size={48} className="mx-auto mb-3 opacity-50" />
-                                    <p className="text-sm">No comments yet. Be the first to comment!</p>
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
 
-                {/* Sidebar - Right 1/3 */}
-                <div className="lg:col-span-1">
-                    <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-[#252525] p-5 sticky top-36 shadow-lg">
-                        <h3 className="font-black text-lg mb-4 flex items-center gap-2">
-                            <Play size={20} className="text-yellow-500" />
-                            Related Memes
-                        </h3>
-                        <div className="space-y-3">
-                            {relatedMemes.map(relatedMeme => (
-                                <Link
-                                    key={relatedMeme.id}
-                                    href={`/meme/${relatedMeme.id}`}
-                                    className="flex gap-3 hover:bg-gray-50 dark:hover:bg-gray-900 rounded-xl p-2 transition-all hover:scale-[1.02] group"
-                                >
-                                    <div className="w-28 h-20 bg-gradient-to-br from-gray-900 to-black rounded-lg overflow-hidden flex-shrink-0 relative">
-                                        {relatedMeme.thumbnail_url ? (
-                                            <img src={relatedMeme.thumbnail_url} alt={relatedMeme.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                                        ) : relatedMeme.media_type === "video" || relatedMeme.file_url.endsWith(".mp4") ? (
+                {/* --- RIGHT: SIDEBAR (4/12 cols) --- */}
+                <div className="lg:col-span-4 space-y-6">
+                    {/* Simplified 'More From User' Section */}
+                    <div className="bg-white dark:bg-[#151515] p-5 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-800 sticky top-24">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <Play size={18} className="fill-yellow-400 text-yellow-400" />
+                                More from {meme.uploader_name}
+                            </h3>
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            {relatedMemes.map(m => (
+                                <div key={m.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-[#222] transition-colors group">
+                                    {/* Thumbnail Preview */}
+                                    <Link href={`/meme/${m.id}`} className="block w-24 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-black relative">
+                                        {m.media_type === "video" || m.file_url.endsWith(".mp4") ? (
                                             <video
-                                                src={relatedMeme.file_url}
-                                                className="w-full h-full object-cover"
-                                                preload="metadata"
+                                                src={m.file_url}
+                                                className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                                                 muted
+                                                onMouseOver={e => e.target.play()}
+                                                onMouseOut={e => { e.target.pause(); e.target.currentTime = 0; }}
                                             />
-                                        ) : relatedMeme.media_type === "audio" || relatedMeme.media_type === "raw" ? (
-                                            <div className="w-full h-full bg-gradient-to-br from-purple-600 via-purple-800 to-black flex items-center justify-center">
-                                                <Music size={24} className="text-yellow-400 animate-pulse" />
+                                        ) : m.media_type === "audio" || m.media_type === "raw" ? (
+                                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-600 to-black">
+                                                <Music size={16} className="text-white" />
                                             </div>
                                         ) : (
-                                            <img src={relatedMeme.file_url} alt={relatedMeme.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                                            <img src={m.thumbnail_url || m.file_url} className="w-full h-full object-cover" />
                                         )}
-                                        {(relatedMeme.media_type === "video" || relatedMeme.file_url.endsWith(".mp4")) && (
-                                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
-                                                <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white group-hover:bg-yellow-400 group-hover:text-black transition-all group-hover:scale-110 shadow-lg">
-                                                    <Play size={16} className="ml-0.5" fill="currentColor" />
+                                        {/* Type Indicator */}
+                                        {(m.media_type === "video" || m.file_url.endsWith(".mp4")) && (
+                                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                <div className="bg-black/30 rounded-full p-1">
+                                                    <Play size={12} className="text-white fill-white" />
                                                 </div>
                                             </div>
                                         )}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-sm line-clamp-2 mb-1 group-hover:text-yellow-500 transition-colors">{relatedMeme.title}</p>
-                                        <p className="text-xs text-gray-500 mb-1">{relatedMeme.uploader_name}</p>
-                                        <div className="flex items-center gap-2 text-xs text-gray-400">
-                                            <span className="flex items-center gap-1"><Eye size={10} /> {relatedMeme.views || 0}</span>
+                                    </Link>
+
+                                    {/* Info & Side Actions */}
+                                    <div className="flex-1 min-w-0 flex items-center justify-between">
+                                        <Link href={`/meme/${m.id}`} className="min-w-0 pr-2">
+                                            <p className="font-bold text-sm truncate group-hover:text-yellow-500 transition-colors">
+                                                {m.title}
+                                            </p>
+                                            <p className="text-xs text-gray-500">{m.views || 0} views</p>
+                                        </Link>
+
+                                        {/* Action Buttons: Fav & Download Only */}
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={(e) => handleGridFavorite(e, m)}
+                                                className={`p-2 rounded-full transition-colors ${userFavorites.includes(m.id)
+                                                    ? "text-yellow-400 bg-yellow-400/10"
+                                                    : "text-gray-400 hover:bg-gray-100 dark:hover:bg-[#333]"}`}
+                                                title="Favorite"
+                                            >
+                                                <Star size={16} fill={userFavorites.includes(m.id) ? "currentColor" : "none"} />
+                                            </button>
+                                            <button
+                                                onClick={(e) => handleGridDownload(e, m)}
+                                                className="p-2 rounded-full text-gray-400 hover:text-green-500 hover:bg-green-500/10 transition-colors"
+                                                title="Download"
+                                            >
+                                                <Download size={16} />
+                                            </button>
                                         </div>
                                     </div>
-                                </Link>
+                                </div>
                             ))}
                             {relatedMemes.length === 0 && (
-                                <div className="text-center py-8 text-gray-400">
-                                    <p className="text-sm">No related memes found</p>
-                                </div>
+                                <p className="text-center text-gray-500 py-4 text-sm">No other memes found.</p>
                             )}
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
     );

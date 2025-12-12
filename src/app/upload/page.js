@@ -7,6 +7,7 @@ import { collection, addDoc, serverTimestamp, doc, getDoc, setDoc } from "fireba
 import { UploadCloud, CheckCircle, AlertCircle, Image, Plus, X, Layers } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
+import AdUnit from "@/components/AdUnit";
 
 const CLOUD_NAME = "ds6pks59z";
 const UPLOAD_PRESET = "memehub_upload";
@@ -353,7 +354,7 @@ export default function UploadPage() {
 
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-4">
+      <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-4 pt-24">
         <div className="bg-white dark:bg-[#1f1f1f] p-10 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-800 max-w-md">
           <div className="bg-yellow-400/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
             <AlertCircle className="w-10 h-10 text-yellow-500" />
@@ -375,7 +376,13 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
+    <div className="max-w-3xl mx-auto px-4 pt-24 pb-10">
+
+      {/* Ad Banner */}
+      <div className="mb-8 flex justify-center w-full">
+        <AdUnit type="banner" />
+      </div>
+
       <div className="bg-white dark:bg-[#1f1f1f] rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 p-8 text-center">

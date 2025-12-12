@@ -3,17 +3,22 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, increment, arrayUnion, arrayRemove } from "firebase/firestore";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
-import { Star, Eye, Download, Heart } from "lucide-react";
+import { Star, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import MemeGridItem from "@/components/MemeGridItem";
+import { useDownloadList } from "@/context/DownloadContext";
 
 export default function FavoritesPage() {
     const { user, googleLogin } = useAuth();
     const router = useRouter();
     const [favorites, setFavorites] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [userFavoritesIds, setUserFavoritesIds] = useState([]); // Use this for the grid item prop
+
+    const { addToDownloadList, removeFromDownloadList, isInDownloadList } = useDownloadList();
 
     useEffect(() => {
         if (!user) {
@@ -27,6 +32,7 @@ export default function FavoritesPage() {
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) {
                     const favoriteIds = userDoc.data().favorites || [];
+                    setUserFavoritesIds(favoriteIds);
 
                     if (favoriteIds.length === 0) {
                         setFavorites([]);
@@ -66,6 +72,99 @@ export default function FavoritesPage() {
         fetchFavorites();
     }, [user]);
 
+    // --- GRID HANDLERS ---
+    const handleReaction = async (e, meme) => {
+        e.stopPropagation();
+        if (!user) return toast.error("Please login to react");
+
+        try {
+            const hasReacted = meme.reactedBy?.includes(user.uid);
+            await updateDoc(doc(db, "memes", meme.id), {
+                "reactions.haha": increment(hasReacted ? -1 : 1),
+                reactedBy: hasReacted ? arrayRemove(user.uid) : arrayUnion(user.uid)
+            });
+
+            // Optimistic update
+            setFavorites(prev => prev.map(m => {
+                if (m.id === meme.id) {
+                    return {
+                        ...m,
+                        reactions: { ...m.reactions, haha: (m.reactions?.haha || 0) + (hasReacted ? -1 : 1) },
+                        reactedBy: hasReacted ? m.reactedBy.filter(id => id !== user.uid) : [...(m.reactedBy || []), user.uid]
+                    };
+                }
+                return m;
+            }));
+        } catch (error) {
+            console.error("Reaction error", error);
+        }
+    };
+
+    const handleDownload = async (e, meme) => {
+        e.stopPropagation();
+        try {
+            await updateDoc(doc(db, "memes", meme.id), { downloads: increment(1) });
+            setFavorites(prev => prev.map(m => m.id === meme.id ? { ...m, downloads: (m.downloads || 0) + 1 } : m));
+
+            const response = await fetch(meme.file_url);
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${meme.title}.${meme.media_type === 'video' ? 'mp4' : 'jpg'}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error("Download error", error);
+            window.open(meme.file_url, '_blank');
+        }
+    };
+
+    const handleFavorite = async (e, meme) => {
+        e.stopPropagation();
+        if (!user) return toast.error("Please login to favorite");
+
+        // Since we are on favorites page, clicking favorite (star) implies removing it
+        const isFav = userFavoritesIds.includes(meme.id);
+
+        // Optimistic update
+        const newFavIds = isFav ? userFavoritesIds.filter(id => id !== meme.id) : [...userFavoritesIds, meme.id];
+        setUserFavoritesIds(newFavIds);
+
+        // If removing, we just update the visual state (unstar) but keep it in the list
+        // so the user can re-favorite if it was a mistake, or just see it until they leave.
+        if (isFav) {
+            toast.success("Removed from favorites");
+        } else {
+            toast.success("Added to favorites");
+        }
+
+        try {
+            await updateDoc(doc(db, "users", user.uid), {
+                favorites: isFav ? arrayRemove(meme.id) : arrayUnion(meme.id)
+            });
+        } catch (error) {
+            // Revert on error
+            console.error("Favorite error", error);
+            if (isFav) {
+                setUserFavoritesIds(prev => [...prev, meme.id]);
+                // We can't easily re-add the meme object to the list without fetching it again if we removed it
+                // So we might just force a reload or accept the glitch. 
+                // For now, let's just toast error.
+                toast.error("Failed to update favorite status");
+            }
+        }
+    };
+
+    const handleShare = (e, meme) => {
+        e.stopPropagation();
+        const shareUrl = `${window.location.origin}/?meme=${meme.id}`;
+        navigator.clipboard.writeText(shareUrl);
+        toast.success("Link copied to clipboard!");
+    };
+
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-[#050505] flex items-center justify-center pt-20">
@@ -103,6 +202,14 @@ export default function FavoritesPage() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header */}
                 <div className="mb-8">
+                    <button
+                        onClick={() => router.back()}
+                        className="flex items-center gap-2 mb-6 text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-white transition-colors"
+                    >
+                        <ArrowLeft size={20} />
+                        <span className="font-bold">Back</span>
+                    </button>
+
                     <div className="flex items-center gap-3 mb-2">
                         <div className="bg-yellow-400 p-2 rounded-lg">
                             <Star size={24} className="text-black" fill="currentColor" />
@@ -136,73 +243,31 @@ export default function FavoritesPage() {
                         </Link>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                         {favorites.map((meme) => (
-                            <Link
+                            <MemeGridItem
                                 key={meme.id}
-                                href={`/meme/${meme.id}`}
-                                className="group bg-white dark:bg-[#1a1a1a] rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-yellow-400/10 transition-all duration-300 hover:-translate-y-1"
-                            >
-                                {/* Thumbnail */}
-                                <div className="relative aspect-video bg-black overflow-hidden">
-                                    {meme.media_type === "video" || meme.file_url?.endsWith(".mp4") ? (
-                                        <video
-                                            src={meme.file_url}
-                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                                            muted
-                                        />
-                                    ) : meme.media_type === "audio" || meme.media_type === "raw" ? (
-                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500">
-                                            <span className="text-6xl">🎵</span>
-                                        </div>
-                                    ) : (
-                                        <img
-                                            src={meme.thumbnail_url || meme.file_url}
-                                            alt={meme.title}
-                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                                        />
-                                    )}
-
-                                    {/* Favorite indicator */}
-                                    <div className="absolute top-2 right-2 bg-yellow-400 text-black p-1.5 rounded-full">
-                                        <Star size={14} fill="currentColor" />
-                                    </div>
-
-                                    {/* Media type badge */}
-                                    <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/70 backdrop-blur-sm rounded-md text-xs font-bold text-white">
-                                        {meme.media_type === "video" || meme.file_url?.endsWith(".mp4") ? "VIDEO" :
-                                            meme.media_type === "audio" || meme.media_type === "raw" ? "AUDIO" : "IMAGE"}
-                                    </div>
-                                </div>
-
-                                {/* Info */}
-                                <div className="p-4">
-                                    <h3 className="font-bold text-black dark:text-white line-clamp-2 mb-2 group-hover:text-yellow-400 transition-colors">
-                                        {meme.title}
-                                    </h3>
-
-                                    <div className="flex items-center gap-3 text-xs text-gray-500">
-                                        <span className="flex items-center gap-1">
-                                            <Eye size={12} />
-                                            {meme.views || 0}
-                                        </span>
-                                        <span className="flex items-center gap-1">
-                                            <Download size={12} />
-                                            {meme.downloads || 0}
-                                        </span>
-                                        <span className="flex items-center gap-1">
-                                            😂 {meme.reactions?.haha || 0}
-                                        </span>
-                                    </div>
-
-                                    {/* Category */}
-                                    <div className="mt-3">
-                                        <span className="inline-block px-2 py-1 bg-gray-100 dark:bg-[#222] rounded-md text-xs font-bold text-gray-700 dark:text-gray-300">
-                                            {meme.category}
-                                        </span>
-                                    </div>
-                                </div>
-                            </Link>
+                                meme={meme}
+                                user={user}
+                                isAdmin={false}
+                                isSelectionMode={false}
+                                selectedMemes={[]}
+                                openMeme={(m) => router.push(`/meme/${m.id}`)}
+                                toggleMemeSelection={() => { }}
+                                handleReaction={handleReaction}
+                                handleDownload={handleDownload}
+                                handleShare={handleShare}
+                                handleFavorite={handleFavorite}
+                                addToDownloadList={addToDownloadList}
+                                removeFromDownloadList={removeFromDownloadList}
+                                isInDownloadList={isInDownloadList}
+                                userFavorites={userFavoritesIds}
+                                canDelete={() => false} // Can't delete memes from favs page
+                                openMenuId={null}
+                                setOpenMenuId={() => { }}
+                                openEditModal={() => { }}
+                                handleDelete={() => { }}
+                            />
                         ))}
                     </div>
                 )}

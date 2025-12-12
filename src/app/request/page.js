@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { Loader2, Link as LinkIcon, Image as ImageIcon, Video, Type, Send, Wand2 } from "lucide-react";
 import Link from "next/link";
+import AdUnit from "@/components/AdUnit";
 
 const CLOUD_NAME = "ds6pks59z";
 const UPLOAD_PRESET = "memehub_upload";
@@ -117,6 +118,11 @@ export default function RequestMemePage() {
 
     return (
         <div className="max-w-2xl mx-auto pt-24 pb-12 px-4">
+            {/* Ad Banner */}
+            <div className="mb-8 flex justify-center w-full">
+                <AdUnit type="banner" />
+            </div>
+
             <div className="text-center mb-10">
                 <div className="inline-flex items-center justify-center p-3 bg-yellow-100 dark:bg-yellow-400/20 rounded-2xl mb-4">
                     <Wand2 className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />

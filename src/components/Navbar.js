@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useDownloadList } from "@/context/DownloadContext";
-import { Menu, X, Search, Upload, LogOut, User as UserIcon, Sun, Moon, ChevronDown, ShoppingBag, Trash2, ShieldAlert, Download, Filter, Check, Star } from "lucide-react";
+import { Menu, X, Search, Upload, LogOut, User as UserIcon, Sun, Moon, ChevronDown, ShoppingBag, Trash2, ShieldAlert, Download, Filter, Check, Star, Music } from "lucide-react";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 
 import { toast } from "react-hot-toast";
 import { db } from "@/lib/firebase";
@@ -18,8 +20,10 @@ export default function Navbar() {
     const { downloadList, removeFromDownloadList, clearDownloadList } = useDownloadList();
     const router = useRouter();
     const searchParams = useSearchParams();
+    const pathname = usePathname();
 
     const [isScrolled, setIsScrolled] = useState(false);
+    const [showMobileSearch, setShowMobileSearch] = useState(true);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isDownloadOpen, setIsDownloadOpen] = useState(false);
@@ -41,10 +45,34 @@ export default function Navbar() {
 
     // Handle scroll effect
     useEffect(() => {
-        const handleScroll = () => setIsScrolled(window.scrollY > 20);
+        const handleScroll = () => {
+            const y = window.scrollY;
+            const heroThreshold = window.innerHeight * 0.9;
+
+            if (pathname === '/') {
+                // On Home: Navbar solid after Hero
+                setIsScrolled(y > heroThreshold);
+                // Mobile Search: Visible at top (<100px) OR after Hero. Hidden in between.
+                setShowMobileSearch(y < 100 || y > heroThreshold);
+            } else {
+                // On other pages: Always solid and visible
+                setIsScrolled(true);
+                setShowMobileSearch(true);
+            }
+        };
+
+        // Initial check
+        handleScroll();
+
         window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
+        // Also listen to resize to update innerHeight check
+        window.addEventListener("resize", handleScroll);
+
+        return () => {
+            window.removeEventListener("scroll", handleScroll);
+            window.removeEventListener("resize", handleScroll);
+        };
+    }, [pathname]);
 
     // Load theme
     useEffect(() => {
@@ -145,29 +173,47 @@ export default function Navbar() {
             return;
         }
 
-        const toastId = toast.loading(`Preparing ${downloadList.length} memes...`);
-        let count = 0;
-        for (const meme of downloadList) {
-            try {
-                const response = await fetch(meme.file_url);
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = meme.title + "." + (meme.media_type === 'video' ? 'mp4' : meme.media_type === 'audio' ? 'mp3' : 'jpg');
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url);
-                count++;
-            } catch (e) {
-                console.error(e);
+        if (downloadList.length === 0) return;
+
+        const toastId = toast.loading(`Compressing ${downloadList.length} memes...`);
+
+        try {
+            const zip = new JSZip();
+            let count = 0;
+
+            // Fetch all files
+            const downloadPromises = downloadList.map(async (meme) => {
+                try {
+                    const response = await fetch(meme.file_url);
+                    const blob = await response.blob();
+                    const ext = meme.media_type === 'video' ? 'mp4' : meme.media_type === 'audio' ? 'mp3' : 'jpg';
+                    const filename = `${meme.title.replace(/[^a-z0-9]/gi, '_').substring(0, 50)}_${meme.id}.${ext}`;
+                    zip.file(filename, blob);
+                    count++;
+                } catch (e) {
+                    console.error(`Failed to download ${meme.id}:`, e);
+                }
+            });
+
+            await Promise.all(downloadPromises);
+
+            if (count === 0) {
+                toast.error("Failed to download files. Check console.", { id: toastId });
+                return;
             }
-            await new Promise(r => setTimeout(r, 500));
+
+            toast.loading("Generating ZIP file...", { id: toastId });
+
+            const content = await zip.generateAsync({ type: "blob" });
+            saveAs(content, `memehub_collection_${new Date().toISOString().slice(0, 10)}.zip`);
+
+            toast.success(`Downloaded ${count} memes as ZIP!`, { id: toastId });
+            clearDownloadList();
+            setIsDownloadOpen(false);
+        } catch (error) {
+            console.error(error);
+            toast.error("Error creating ZIP file", { id: toastId });
         }
-        toast.success(`Downloaded ${count} memes!`, { id: toastId });
-        clearDownloadList();
-        setIsDownloadOpen(false);
     };
 
     const clearFilters = () => {
@@ -189,7 +235,7 @@ export default function Navbar() {
                             <div className="bg-yellow-400 p-1.5 rounded-lg rotate-3 group-hover:rotate-12 transition-transform duration-300">
                                 <span className="text-xl">😂</span>
                             </div>
-                            <span className="text-2xl font-black tracking-tighter text-black dark:text-white">
+                            <span className={`text-2xl font-black tracking-tighter transition-colors ${isScrolled ? "text-black dark:text-white" : "text-white"}`}>
                                 MemeHub<span className="text-yellow-400">HQ</span>
                             </span>
                         </Link>
@@ -199,7 +245,7 @@ export default function Navbar() {
                             <div className="relative group" ref={filterRef}>
                                 <form onSubmit={handleSearch} className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Search className="h-4 w-4 text-gray-400 group-focus-within:text-yellow-400 transition-colors" />
+                                        <Search className={`h-4 w-4 group-focus-within:text-yellow-400 transition-colors ${isScrolled ? "text-gray-400" : "text-white/60"}`} />
                                     </div>
                                     <input
                                         type="text"
@@ -211,7 +257,7 @@ export default function Navbar() {
                                     <button
                                         type="button"
                                         onClick={() => setShowFilter(!showFilter)}
-                                        className={`absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer hover:text-yellow-400 transition-colors ${showFilter || activeFiltersCount > 0 ? "text-yellow-400" : "text-gray-400"}`}
+                                        className={`absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer hover:text-yellow-400 transition-colors ${showFilter || activeFiltersCount > 0 ? "text-yellow-400" : (isScrolled ? "text-gray-400" : "text-white/60")}`}
                                     >
                                         <Filter className="h-4 w-4" />
                                         {activeFiltersCount > 0 && (
@@ -338,7 +384,7 @@ export default function Navbar() {
                                 )}
                             </div>
 
-                            <div className="flex items-center gap-3 lg:gap-6 text-sm font-medium text-gray-600 dark:text-gray-300">
+                            <div className={`flex items-center gap-3 lg:gap-6 text-sm font-medium transition-colors ${isScrolled ? "text-gray-600 dark:text-gray-300" : "text-white/90 hover:text-white"}`}>
                                 <Link href="/upload" className="hover:text-yellow-400 transition-colors flex items-center gap-1">
                                     <Upload size={18} />
                                     <span className="hidden lg:inline">Upload</span>
@@ -379,13 +425,13 @@ export default function Navbar() {
                             </div>
 
                             <div className="flex items-center gap-4">
-                                <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#1a1a1a] text-gray-600 dark:text-gray-300 transition-colors">
+                                <button onClick={toggleTheme} className={`p-2 rounded-full transition-colors ${isScrolled ? "hover:bg-gray-100 dark:hover:bg-[#1a1a1a] text-gray-600 dark:text-gray-300" : "hover:bg-white/10 text-white"}`}>
                                     {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
                                 </button>
 
                                 {user ? (
-                                    <div className="relative pl-4 border-l border-gray-200 dark:border-gray-800">
-                                        <button onClick={() => setIsProfileOpen(!isProfileOpen)} className="flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-[#1a1a1a] p-1 pr-3 rounded-full transition-colors">
+                                    <div className={`relative pl-4 border-l ${isScrolled ? "border-gray-200 dark:border-gray-800" : "border-white/20"}`}>
+                                        <button onClick={() => setIsProfileOpen(!isProfileOpen)} className={`flex items-center gap-2 p-1 pr-3 rounded-full transition-colors ${isScrolled ? "hover:bg-gray-100 dark:hover:bg-[#1a1a1a]" : "hover:bg-white/10"}`}>
                                             {user.photoURL ? (
                                                 <img src={user.photoURL} alt={user.displayName} className="w-8 h-8 rounded-full ring-2 ring-yellow-400" />
                                             ) : (
@@ -393,10 +439,10 @@ export default function Navbar() {
                                                     {user.displayName?.[0] || "U"}
                                                 </div>
                                             )}
-                                            <span className="text-sm font-medium text-black dark:text-white hidden lg:block">
+                                            <span className={`text-sm font-medium hidden lg:block ${isScrolled ? "text-black dark:text-white" : "text-white"}`}>
                                                 {user.displayName?.split(" ")[0]}
                                             </span>
-                                            <ChevronDown size={14} className="text-gray-500" />
+                                            <ChevronDown size={14} className={isScrolled ? "text-gray-500" : "text-white/70"} />
                                         </button>
 
                                         {isProfileOpen && (
@@ -453,7 +499,7 @@ export default function Navbar() {
                             {/* Hamburger Menu */}
                             <button
                                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                                className="text-black dark:text-white p-2"
+                                className={`p-2 transition-colors ${isScrolled ? "text-black dark:text-white" : "text-white"}`}
                                 aria-label="Menu"
                             >
                                 {isMobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
@@ -461,8 +507,8 @@ export default function Navbar() {
                         </div>
                     </div>
 
-                    {/* Mobile Search Bar - Persistent */}
-                    <div className="md:hidden pb-4">
+                    {/* Mobile Search Bar - Scroll visibility logic */}
+                    <div className={`md:hidden transition-all duration-500 ease-in-out overflow-hidden ${showMobileSearch ? "max-h-24 opacity-100 pb-4" : "max-h-0 opacity-0 pb-0"}`}>
                         <form onSubmit={handleSearch} className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Search className="h-4 w-4 text-gray-400" />
@@ -594,45 +640,115 @@ export default function Navbar() {
                 )}
             </nav>
 
-            {/* Download Modal - Same as before */}
+            {/* Advanced Download Modal */}
             {isDownloadOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setIsDownloadOpen(false)}>
-                    <div className="bg-white dark:bg-[#1f1f1f] w-full max-w-md rounded-2xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
-                        <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
-                            <h3 className="text-xl font-black">Download Bag</h3>
-                            <button onClick={() => setIsDownloadOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xl animate-in fade-in duration-200" onClick={() => setIsDownloadOpen(false)}>
+                    <div className="bg-white dark:bg-[#111] w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-800 flex flex-col max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
+
+                        {/* Header */}
+                        <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-[#151515]/50 backdrop-blur-md">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-yellow-400 p-2 rounded-xl text-black">
+                                    <ShoppingBag size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-black dark:text-white">Download Bag</h3>
+                                    <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">{downloadList.length} Items Selected</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setIsDownloadOpen(false)}
+                                className="p-2.5 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-500 dark:text-gray-400"
+                            >
                                 <X size={20} />
                             </button>
                         </div>
-                        <div className="p-6 max-h-96 overflow-y-auto">
+
+                        {/* List */}
+                        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-white dark:bg-[#111]">
                             {downloadList.length === 0 ? (
-                                <p className="text-center text-gray-500 py-8">No memes in download bag</p>
+                                <div className="flex flex-col items-center justify-center h-48 text-center">
+                                    <div className="bg-gray-100 dark:bg-[#1a1a1a] p-4 rounded-full mb-4">
+                                        <ShoppingBag size={40} className="text-gray-300 dark:text-gray-700" />
+                                    </div>
+                                    <p className="text-gray-500 font-bold">Your bag is empty.</p>
+                                    <p className="text-xs text-gray-400 mt-1">Add memes to download them in bulk!</p>
+                                </div>
                             ) : (
                                 <div className="space-y-3">
                                     {downloadList.map((meme) => (
-                                        <div key={meme.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-[#252525] rounded-lg">
-                                            <img src={meme.thumbnail_url || meme.file_url} className="w-12 h-12 rounded object-cover" alt={meme.title} />
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-bold truncate">{meme.title}</p>
-                                                <p className="text-xs text-gray-500">{meme.media_type}</p>
+                                        <div key={meme.id} className="group flex items-center gap-4 p-3 bg-gray-50 dark:bg-[#1a1a1a] hover:bg-gray-100 dark:hover:bg-[#222] rounded-2xl border border-transparent hover:border-yellow-400/30 transition-all">
+                                            {/* Thumbnail */}
+                                            <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-black">
+                                                {meme.media_type === 'video' ? (
+                                                    <video src={meme.file_url} className="w-full h-full object-cover opacity-80" />
+                                                ) : meme.media_type === 'audio' ? (
+                                                    <div className="w-full h-full flex items-center justify-center bg-purple-900"><Music size={20} className="text-white" /></div>
+                                                ) : (
+                                                    <img src={meme.thumbnail_url || meme.file_url} className="w-full h-full object-cover" />
+                                                )}
+                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/20 transition-opacity">
+                                                    <div className="bg-white/20 backdrop-blur-sm p-1 rounded-full">
+                                                        <Check size={12} className="text-white" />
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <button onClick={() => removeFromDownloadList(meme.id)} className="p-2 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-full text-red-600">
-                                                <Trash2 size={16} />
+
+                                            {/* Info */}
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="font-bold text-sm text-black dark:text-gray-200 truncate pr-2">{meme.title}</h4>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded text-black uppercase ${meme.media_type === 'video' ? 'bg-blue-200' : meme.media_type === 'audio' ? 'bg-purple-200' : 'bg-green-200'}`}>
+                                                        {meme.media_type}
+                                                    </span>
+                                                    <span className="text-[10px] text-gray-400 uppercase font-medium">
+                                                        {meme.file_url.split('.').pop().toUpperCase()}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Action */}
+                                            <button
+                                                onClick={() => removeFromDownloadList(meme.id)}
+                                                className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                                title="Remove"
+                                            >
+                                                <Trash2 size={18} />
                                             </button>
                                         </div>
                                     ))}
                                 </div>
                             )}
                         </div>
+
+                        {/* Footer */}
                         {downloadList.length > 0 && (
-                            <div className="p-6 border-t border-gray-100 dark:border-gray-800 flex gap-3">
-                                <button onClick={clearDownloadList} className="flex-1 py-2.5 rounded-xl font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">
-                                    Clear All
-                                </button>
-                                <button onClick={handleBatchDownload} className="flex-1 py-2.5 rounded-xl font-bold bg-yellow-400 text-black hover:bg-yellow-500 flex items-center justify-center gap-2">
-                                    <Download size={16} />
-                                    Download All
-                                </button>
+                            <div className="p-6 bg-gray-50 dark:bg-[#151515] border-t border-gray-100 dark:border-gray-800 text-center">
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={clearDownloadList}
+                                        className="flex-1 py-4 rounded-2xl font-bold text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-[#222] transition-colors text-sm"
+                                    >
+                                        Clear Selection
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            // Implement dropdown or toggle here for options if needed?
+                                            // For batch download, user usually just wants everything.
+                                            // The user request specifically mentioned "card download button" for "single download".
+                                            // I will leave the batch download as ZIP for now unless requested.
+                                            handleBatchDownload();
+                                        }}
+                                        className="flex-[2] py-4 rounded-2xl font-black bg-yellow-400 text-black hover:bg-yellow-500 shadow-lg shadow-yellow-400/20 hover:scale-[1.02] active:scale-95 transition-all text-sm flex items-center justify-center gap-2"
+                                    >
+                                        <Download size={20} />
+                                        Download ZIP ({downloadList.length})
+                                    </button>
+                                </div>
+                                <p className="text-xs text-gray-400 mt-4 font-medium">
+                                    Files will be compressed into a single ZIP archive.
+                                </p>
                             </div>
                         )}
                     </div>

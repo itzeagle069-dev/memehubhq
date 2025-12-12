@@ -11,6 +11,8 @@ import { useDownloadList } from "@/context/DownloadContext";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import AdUnit from "@/components/AdUnit";
+import HeroSection from "@/components/HeroSection";
+import MemeGridItem from "@/components/MemeGridItem";
 
 
 // 🔴 ADMIN UIDS
@@ -39,7 +41,7 @@ function CategoryBtn({ icon, label, active, onClick }) {
     return (
         <button
             onClick={onClick}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all active:scale-95 border ${active
+            className={`flex items-center gap-2 px-3 py-2 md:px-5 md:py-2.5 rounded-full text-xs md:text-sm font-bold transition-all active:scale-95 border whitespace-nowrap ${active
                 ? "bg-black dark:bg-white text-white dark:text-black border-transparent shadow-lg scale-105"
                 : "bg-white dark:bg-[#151515] text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-[#202020]"
                 }`}
@@ -305,7 +307,7 @@ function HomeContent() {
             setHasMore(true);
 
             try {
-                const ITEMS_PER_PAGE = 28;
+                const ITEMS_PER_PAGE = 25;
 
                 // Determine Sort Field and Direction
                 let sortField = "createdAt";
@@ -424,7 +426,7 @@ function HomeContent() {
 
         setLoadingMore(true);
         try {
-            const ITEMS_PER_PAGE = 28;
+            const ITEMS_PER_PAGE = 25;
 
             // Determine Sort Field and Direction
             let sortField = "createdAt";
@@ -480,7 +482,8 @@ function HomeContent() {
             if (paramDate && paramDate !== "all") {
                 const now = new Date();
                 fetchedMemes = fetchedMemes.filter(m => {
-                    const createdAt = m.createdAt?.toDate ? m.createdAt.toDate() : new Date(m.createdAt);
+                    if (!m.createdAt) return false;
+                    const createdAt = m.createdAt.toDate ? m.createdAt.toDate() : new Date(m.createdAt);
                     const diffSeconds = (now - createdAt) / 1000;
 
                     if (paramDate === "1h") return diffSeconds < 3600;
@@ -661,9 +664,17 @@ function HomeContent() {
             const response = await fetch(url);
             const blob = await response.blob();
             const blobUrl = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
+            const link = document.createElement("a");
             link.href = blobUrl;
-            link.download = filename || 'memehubhq-download';
+            // Use the passed filename which might include "(Audio)" or "(Video Only)" hints
+            let finalFilename = filename ? `${filename}.${url.split('.').pop()}` : `memehub-${memeId}.${url.split('.').pop()}`;
+
+            // Check if user requested Audio Only
+            if (filename && filename.includes("(Audio)")) {
+                finalFilename = `${filename}.mp3`;
+            }
+
+            link.download = finalFilename;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -890,43 +901,27 @@ function HomeContent() {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#050505] text-black dark:text-white pb-20">
             {/* 1. HERO SECTION */}
-            <section className="relative pt-32 pb-10 px-4 overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-b from-yellow-400/10 to-transparent pointer-events-none" />
-                <div className="max-w-4xl mx-auto text-center relative z-10">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-400/20 text-yellow-600 dark:text-yellow-400 font-bold text-sm mb-6">
-                        <Sparkles size={16} />
-                        <span>The #1 Place for Viral Memes</span>
+            {/* 1. HERO SECTION (Dynamic) */}
+            <HeroSection
+                user={user}
+                googleLogin={googleLogin}
+                router={router}
+                memes={memes}
+                openMeme={openMeme}
+            />
+
+            {/* 2. ACTIONS & ADS ROW */}
+
+            <div id="hero-actions" className="w-full max-w-[1600px] mx-auto px-4 py-8 flex items-center justify-center relative z-20 bg-white dark:bg-[#050505]">
+                <div className="w-full max-w-[728px]">
+                    <div className="w-full scale-100 shadow-xl rounded-lg overflow-hidden border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
+                        <AdUnit type="banner" />
                     </div>
-                    <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6">
-                        Looking for meme clips ? <br />
-                        <span className="text-yellow-400">For your videos</span>
-                    </h1>
-                    <p className="text-xl text-gray-500 dark:text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-                        HD meme clips for editors — easy download, clean UI, no signup. Perfect for YouTube, Shorts & Reels.
-                    </p>
-                    {!user && (
-                        <div className="mt-6 flex justify-center">
-                            <button
-                                onClick={async () => {
-                                    try {
-                                        await googleLogin();
-                                        router.push('/upload');
-                                    } catch (e) {
-                                        console.error(e);
-                                    }
-                                }}
-                                className="bg-yellow-400 text-black px-8 py-4 rounded-full font-bold text-lg hover:bg-yellow-500 transition-transform hover:scale-105 shadow-xl"
-                            >
-                                Upload your meme
-                            </button>
-                        </div>
-                    )}
                 </div>
-            </section>
+            </div>
 
             <div id="explore" className="max-w-7xl mx-auto px-4">
                 {/* 2. CATEGORY TABS */}
-                <AdUnit type="banner" />
                 <div className="flex flex-col gap-4 mb-8">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                         <h2 className="text-2xl font-bold dark:text-white flex items-center gap-2">
@@ -950,11 +945,11 @@ function HomeContent() {
                             </select>
                         </div>
                     </div>
-                    <div className="flex flex-wrap gap-2 pb-2">
+                    <div className="flex overflow-x-auto pb-2 -mx-4 px-4 gap-3 md:flex-wrap md:overflow-visible md:mx-0 md:px-0 scrollbar-hide snap-x">
                         <CategoryBtn icon={<Sparkles size={16} />} label="All" active={activeCategory === 'all'} onClick={() => setActiveCategory('all')} />
                         <CategoryBtn icon={<TrendingUp size={16} />} label="Trending" active={activeCategory === 'trending'} onClick={() => setActiveCategory('trending')} />
-                        <CategoryBtn icon={<Clock size={16} />} label="Recently Uploaded" active={activeCategory === 'recent'} onClick={() => setActiveCategory('recent')} />
-                        <CategoryBtn icon={<Download size={16} />} label="Most Downloaded" active={activeCategory === 'most_downloaded'} onClick={() => setActiveCategory('most_downloaded')} />
+                        <CategoryBtn icon={<Clock size={16} />} label="Recent" active={activeCategory === 'recent'} onClick={() => setActiveCategory('recent')} />
+                        <CategoryBtn icon={<Download size={16} />} label="Popular" active={activeCategory === 'most_downloaded'} onClick={() => setActiveCategory('most_downloaded')} />
                         <CategoryBtn icon={<Smile size={16} />} label="Images" active={activeCategory === 'image'} onClick={() => setActiveCategory('image')} />
                         <CategoryBtn icon={<Video size={16} />} label="Videos" active={activeCategory === 'video'} onClick={() => setActiveCategory('video')} />
                         <CategoryBtn icon={<Music size={16} />} label="Audio" active={activeCategory === 'audio'} onClick={() => setActiveCategory('audio')} />
@@ -981,189 +976,29 @@ function HomeContent() {
                                     <AdUnit type="native" />
                                 </div>
                             ) : (
-                                <Fragment key={item.data.id}>
-                                    <div
-                                        onClick={() => openMeme(item.data)}
-                                        className="group relative rounded-2xl bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-[#252525] hover:shadow-2xl hover:shadow-yellow-400/10 dark:hover:border-yellow-400/30 transition-all duration-300 flex flex-col cursor-pointer h-full"
-                                    >
-                                        {/* MEDIA DISPLAY */}
-                                        <div className="aspect-[4/3] bg-black flex items-center justify-center relative overflow-hidden rounded-t-2xl">
-                                            {item.data.thumbnail_url ? (
-                                                <img src={item.data.thumbnail_url} alt={item.data.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                            ) : item.data.media_type === "video" || item.data.file_url.endsWith(".mp4") ? (
-                                                <video src={item.data.file_url} className="w-full h-full object-cover" />
-                                            ) : item.data.media_type === "raw" || item.data.media_type === "audio" ? (
-                                                <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-900 to-black text-white p-4">
-                                                    <Music className="w-16 h-16 mb-4 text-yellow-400" />
-                                                </div>
-                                            ) : (
-                                                <img src={item.data.file_url} alt={item.data.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                            )}
-
-                                            {(item.data.media_type === "video" || item.data.media_type === "raw" || item.data.media_type === "audio") && (
-                                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
-                                                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white group-hover:scale-110 transition-transform">
-                                                        <Play fill="currentColor" className="ml-1 w-5 h-5" />
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            <div className="absolute top-2 right-2 bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded backdrop-blur-sm uppercase">
-                                                {item.data.media_type === "raw" || item.data.media_type === "audio" ? "AUDIO" : item.data.media_type}
-                                            </div>
-
-                                            {/* Admin Multi-Select Checkbox */}
-                                            {isAdmin && isSelectionMode && (
-                                                <div
-                                                    className="absolute top-2 left-2 z-10"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        toggleMemeSelection(item.data.id);
-                                                    }}
-                                                >
-                                                    <div className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-all ${selectedMemes.includes(item.data.id)
-                                                        ? "bg-yellow-400 border-yellow-400"
-                                                        : "bg-white/20 border-white backdrop-blur-sm hover:bg-white/30"
-                                                        }`}>
-                                                        {selectedMemes.includes(item.data.id) && (
-                                                            <Check size={18} className="text-black font-bold" />
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* CARD FOOTER */}
-                                        <div className="p-3 flex flex-col gap-2 flex-1">
-                                            {/* Title - 2 lines max */}
-                                            <h3 className="font-semibold text-xs leading-tight line-clamp-2 text-black dark:text-white">{item.data.title}</h3>
-
-                                            {/* Username + Counts */}
-                                            <div className="flex items-center justify-between gap-2">
-                                                <Link
-                                                    href={`/user/${item.data.uploader_id}`}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className="flex items-center gap-1.5 hover:opacity-70 transition-opacity min-w-0 flex-1"
-                                                >
-                                                    <img src={item.data.uploader_pic || "https://ui-avatars.com/api/?name=User"} alt={item.data.uploader_name || "User"} className="w-4 h-4 rounded-full flex-shrink-0" />
-                                                    <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate hover:text-yellow-500 transition-colors">{item.data.uploader_name}</span>
-                                                </Link>
-
-                                                {/* Counts (Reaction + Download) */}
-                                                <div className="flex items-center gap-2 text-[10px] text-gray-400 font-medium flex-shrink-0">
-                                                    <span className="flex items-center gap-0.5">😂 {item.data.reactions?.haha || 0}</span>
-                                                    <span className="flex items-center gap-0.5"><Download size={10} /> {item.data.downloads || 0}</span>
-                                                </div>
-                                            </div>
-
-                                            {/* Bottom Row: Actions */}
-                                            <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800 gap-2 overflow-x-auto no-scrollbar">
-                                                {/* Reaction Button */}
-                                                <button
-                                                    onClick={(e) => handleReaction(e, item.data)}
-                                                    className={`flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-full transition-colors text-[10px] font-bold ${item.data.reactedBy?.includes(user?.uid)
-                                                        ? "bg-yellow-400 text-black"
-                                                        : "bg-yellow-50 dark:bg-yellow-400/10 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-400/20"
-                                                        }`}
-                                                >
-                                                    😂
-                                                </button>
-
-                                                <div className="flex items-center gap-1 flex-shrink-0">
-                                                    {/* Download Button */}
-                                                    <button
-                                                        onClick={(e) => handleDownload(e, item.data.id, item.data.file_url, item.data.title)}
-                                                        className="px-2 py-1 rounded-lg bg-yellow-400 text-black text-[10px] font-bold hover:bg-yellow-500 transition-colors flex items-center gap-1"
-                                                        title="Download now"
-                                                    >
-                                                        Download
-                                                    </button>
-
-                                                    {/* Add to Downloads (Checkbox) */}
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            if (isInDownloadList(item.data.id)) {
-                                                                removeFromDownloadList(item.data.id);
-                                                            } else {
-                                                                addToDownloadList(item.data);
-                                                            }
-                                                        }}
-                                                        className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-blue-500 transition-colors relative"
-                                                        title={isInDownloadList(item.data.id) ? "Added to downloads" : "Add to downloads"}
-                                                    >
-                                                        {isInDownloadList(item.data.id) ? (
-                                                            <div className="relative">
-                                                                <Square size={16} className="text-blue-500" />
-                                                                <Download size={10} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-blue-500" />
-                                                            </div>
-                                                        ) : (
-                                                            <Square size={16} />
-                                                        )}
-                                                    </button>
-
-                                                    {/* Favorite Button */}
-                                                    <button
-                                                        onClick={(e) => handleFavorite(e, item.data)}
-                                                        className={`p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${userFavorites.includes(item.data.id) ? "text-yellow-400" : "text-gray-400 hover:text-yellow-500"}`}
-                                                        title="Favorite"
-                                                    >
-                                                        <Star size={14} fill={userFavorites.includes(item.data.id) ? "currentColor" : "none"} />
-                                                    </button>
-
-                                                    {/* Share Button */}
-                                                    <button
-                                                        onClick={(e) => handleShare(e, item.data)}
-                                                        className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                                                        title="Share"
-                                                    >
-                                                        <Share2 size={14} />
-                                                    </button>
-
-                                                    {/* Menu */}
-                                                    {(canDelete(item.data) || ADMIN_IDS.includes(user?.uid)) && (
-                                                        <div className="relative">
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setOpenMenuId(openMenuId === item.data.id ? null : item.data.id);
-                                                                }}
-                                                                className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 transition-colors"
-                                                            >
-                                                                <MoreVertical size={14} />
-                                                            </button>
-                                                            {openMenuId === item.data.id && (
-                                                                <div className="absolute right-0 top-full mt-1 w-24 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
-                                                                    <button
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            openEditModal(item.data);
-                                                                            setOpenMenuId(null);
-                                                                        }}
-                                                                        className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 text-left text-xs text-black dark:text-white"
-                                                                    >
-                                                                        <Edit2 size={12} /> Edit
-                                                                    </button>
-                                                                    {canDelete(item.data) && (
-                                                                        <button
-                                                                            onClick={(e) => {
-                                                                                handleDelete(e, item.data);
-                                                                                setOpenMenuId(null);
-                                                                            }}
-                                                                            className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 text-left text-xs"
-                                                                        >
-                                                                            <Trash2 size={12} /> Delete
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Fragment>
+                                <MemeGridItem
+                                    key={item.data.id}
+                                    meme={item.data}
+                                    user={user}
+                                    isAdmin={ADMIN_IDS.includes(user?.uid)}
+                                    isSelectionMode={isSelectionMode}
+                                    selectedMemes={selectedMemes}
+                                    openMeme={openMeme}
+                                    toggleMemeSelection={toggleMemeSelection}
+                                    handleReaction={handleReaction}
+                                    handleDownload={handleDownload}
+                                    handleShare={handleShare}
+                                    handleFavorite={handleFavorite}
+                                    addToDownloadList={addToDownloadList}
+                                    removeFromDownloadList={removeFromDownloadList}
+                                    isInDownloadList={isInDownloadList}
+                                    userFavorites={userFavorites}
+                                    canDelete={canDelete}
+                                    openMenuId={openMenuId}
+                                    setOpenMenuId={setOpenMenuId}
+                                    openEditModal={openEditModal}
+                                    handleDelete={handleDelete}
+                                />
                             )
                         ))}
                     </div>
