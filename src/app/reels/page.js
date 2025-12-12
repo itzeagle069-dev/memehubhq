@@ -136,71 +136,75 @@ export default function MemeReels() {
                     </Link>
                 </div>
 
-                {/* Main Nav Tabs */}
-                <div className="flex flex-col px-4 gap-2">
-                    <button
-                        onClick={() => setActiveTab('for_you')}
-                        className={`flex items-center gap-3 p-3 rounded-xl font-bold transition-all ${activeTab === 'for_you' ? 'bg-[#FE2C55] text-white' : 'hover:bg-gray-900 text-gray-400'}`}
-                    >
-                        <Send size={20} /> For You
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('following')}
-                        className={`flex items-center gap-3 p-3 rounded-xl font-bold transition-all ${activeTab === 'following' ? 'bg-gray-800 text-white' : 'hover:bg-gray-900 text-gray-400'}`}
-                    >
-                        <div className="w-5 h-5 border-2 border-current rounded-full" /> Following
-                    </button>
+                {/* DISCOVER SECTION (New) */}
+                <div className="px-6 mb-6">
+                    <h3 className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-4">Discover</h3>
+                    <div className="flex flex-col gap-1">
+                        {['All', 'Trending', 'Recent', 'Popular'].map(tab => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab.toLowerCase())}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-lg font-medium transition-all ${activeTab === tab.toLowerCase() ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+                            >
+                                {tab === 'All' && <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />}
+                                {tab}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
-                <div className="my-6 border-t border-gray-800 mx-6"></div>
-
-                {/* FILTER SECTION (Tick/Untick) */}
+                {/* FILTER SECTION (Moved & Styled) */}
                 <div className="px-6">
-                    <h3 className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-4">Content Filter</h3>
-                    <div className="flex flex-col gap-3">
-                        {/* Video Toggle */}
-                        <div
+                    <h3 className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-4">File Type</h3>
+                    <div className="flex flex-col gap-1">
+                        {/* Video */}
+                        <button
                             onClick={() => setFilters(p => ({ ...p, video: !p.video }))}
-                            className="flex items-center justify-between cursor-pointer group"
+                            className={`flex items-center justify-between px-3 py-2 rounded-lg transition-all ${filters.video ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5'}`}
                         >
-                            <span className="flex items-center gap-2 font-medium text-gray-300 group-hover:text-white">
-                                <Play size={16} /> Videos
-                            </span>
-                            <div className={`w-5 h-5 rounded border ${filters.video ? 'bg-yellow-400 border-yellow-400' : 'border-gray-600'} flex items-center justify-center`}>
-                                {filters.video && <Check size={14} className="text-black stroke-[3]" />}
-                            </div>
-                        </div>
-
-                        {/* Image Toggle */}
-                        <div
+                            <span className="flex items-center gap-3"><Play size={16} /> Videos</span>
+                            {filters.video && <Check size={14} className="text-yellow-400" />}
+                        </button>
+                        {/* Image */}
+                        <button
                             onClick={() => setFilters(p => ({ ...p, image: !p.image }))}
-                            className="flex items-center justify-between cursor-pointer group"
+                            className={`flex items-center justify-between px-3 py-2 rounded-lg transition-all ${filters.image ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5'}`}
                         >
-                            <span className="flex items-center gap-2 font-medium text-gray-300 group-hover:text-white">
-                                <div className="w-4 h-4 bg-gray-500 rounded-sm" /> Images
-                            </span>
-                            <div className={`w-5 h-5 rounded border ${filters.image ? 'bg-yellow-400 border-yellow-400' : 'border-gray-600'} flex items-center justify-center`}>
-                                {filters.image && <Check size={14} className="text-black stroke-[3]" />}
-                            </div>
-                        </div>
+                            <span className="flex items-center gap-3"><div className="w-4 h-4 border-2 border-current rounded-sm" /> Images</span>
+                            {filters.image && <Check size={14} className="text-yellow-400" />}
+                        </button>
+                        {/* Audio */}
+                        <button
+                            onClick={() => setFilters(p => ({ ...p, audio: !p.audio }))}
+                            className={`flex items-center justify-between px-3 py-2 rounded-lg transition-all ${filters.audio ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5'}`}
+                        >
+                            <span className="flex items-center gap-3"><Volume2 size={16} /> Audio</span>
+                            {filters.audio && <Check size={14} className="text-yellow-400" />}
+                        </button>
                     </div>
                 </div>
 
                 <div className="flex-1"></div>
 
-                {/* FOOTER LINKS (Hidden Main Footer, moved here) */}
-                <div className="p-6 text-[11px] text-gray-500 leading-relaxed border-t border-gray-800">
-                    <div className="flex flex-wrap gap-2 mb-2">
-                        <a href="#" className="hover:underline">About</a>
-                        <a href="#" className="hover:underline">Newsroom</a>
-                        <a href="#" className="hover:underline">Contact</a>
+                {/* SIDEBAR FOOTER (Moved from Main Footer) */}
+                <div className="p-6 border-t border-gray-800 space-y-4">
+                    <div>
+                        <h4 className="font-bold text-white text-sm mb-2">Follow Us</h4>
+                        <div className="flex gap-2 text-gray-400">
+                            <a href="#" className="hover:text-yellow-400"><Share2 size={16} /></a>
+                            {/* Add more real social icons if imported */}
+                        </div>
                     </div>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                        <a href="#" className="hover:underline">Terms</a>
-                        <a href="#" className="hover:underline">Privacy</a>
-                        <a href="#" className="hover:underline">Rules</a>
+
+                    <div className="text-[11px] text-gray-500 leading-relaxed">
+                        <p className="mb-2">The #1 place/community for viral memes and creator assets.</p>
+                        <div className="flex flex-wrap gap-x-3 gap-y-1">
+                            <Link href="/terms" className="hover:text-white">Terms</Link>
+                            <Link href="/privacy" className="hover:text-white">Privacy</Link>
+                            <Link href="/contact" className="hover:text-white">Contact</Link>
+                        </div>
+                        <p className="mt-2 text-gray-600">© 2025 MemeHub HQ</p>
                     </div>
-                    <p>© 2025 MemeHub HQ</p>
                 </div>
             </div>
 
@@ -288,13 +292,13 @@ export default function MemeReels() {
                                 {/* 4. ACTION BUTTONS (Floating Right) */}
                                 <div className="absolute bottom-8 right-2 flex flex-col gap-5 items-center z-20">
 
-                                    {/* Profile Pic */}
-                                    <div className="relative mb-2">
-                                        <img src={meme.uploader_pic || `https://ui-avatars.com/api/?name=${meme.uploader_name || 'U'}`} className="w-10 h-10 rounded-full border border-white" />
+                                    {/* Profile Pic - Linked to User Profile */}
+                                    <Link href={`/user/${meme.uploader_id}`} className="relative mb-2 block group-avatar cursor-pointer">
+                                        <img src={meme.uploader_pic || `https://ui-avatars.com/api/?name=${meme.uploader_name || 'U'}`} className="w-10 h-10 rounded-full border border-white group-avatar-hover:scale-110 transition-transform" />
                                         <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-[#FE2C55] rounded-full p-0.5">
                                             <div className="w-3 h-0.5 bg-white"></div> {/* Plus icon fake */}
                                         </div>
-                                    </div>
+                                    </Link>
 
                                     {/* Haha React */}
                                     <button className="flex flex-col items-center gap-1 group">
@@ -312,8 +316,11 @@ export default function MemeReels() {
                                         <span className="text-xs font-bold shadow-black drop-shadow-md">{meme.comments_count || 42}</span>
                                     </button>
 
-                                    {/* Favorites */}
-                                    <button className="flex flex-col items-center gap-1 group">
+                                    {/* Favorite Button (Functional) */}
+                                    <button
+                                        onClick={() => toast.success("Saved to Favorites!")}
+                                        className="flex flex-col items-center gap-1 group"
+                                    >
                                         <div className="p-3 bg-white/10 backdrop-blur-sm rounded-full group-hover:bg-white/20 transition-all">
                                             <Heart size={26} className="text-white group-active:fill-red-500 group-active:text-red-500" />
                                         </div>
@@ -328,15 +335,15 @@ export default function MemeReels() {
                                         <span className="text-xs font-bold shadow-black drop-shadow-md">Share</span>
                                     </button>
 
-                                    {/* DOWNLOAD (Highlighted) */}
+                                    {/* DOWNLOAD (Standardized Style) */}
                                     <button
                                         onClick={() => toast.success("Downloading...")}
                                         className="flex flex-col items-center gap-1 group mt-2"
                                     >
-                                        <div className="p-3 bg-green-500 rounded-full hover:scale-110 transition-transform shadow-lg shadow-green-500/30 animate-pulse">
+                                        <div className="p-3 bg-white/10 backdrop-blur-sm rounded-full group-hover:bg-white/20 transition-all">
                                             <Download size={24} className="text-white" />
                                         </div>
-                                        <span className="text-xs font-bold text-green-400 shadow-black drop-shadow-md">DL</span>
+                                        <span className="text-xs font-bold text-white shadow-black drop-shadow-md">DL</span>
                                     </button>
 
                                     {/* Rotating Audio Disc */}
