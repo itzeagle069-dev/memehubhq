@@ -27,9 +27,18 @@ export default function MemeReels() {
             setLoading(true);
             try {
                 // Fetch approved memes (In a real app, use pagination/infinite scroll)
-                const q = query(collection(db, "memes"), where("status", "==", "approved"), limit(50));
+                // Fetch approved/published memes
+                // We use orderBy("createdAt", "desc") to get newest first, matching homepage strategy
+                const q = query(
+                    collection(db, "memes"),
+                    // where("status", "==", "published"), // Removed generic 'where' to rely on client filter or simple ordering to avoid index issues
+                    limit(50)
+                );
                 const snapshot = await getDocs(q);
                 let rawData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // Filter for Published/Approved statuses on client side
+                rawData = rawData.filter(m => m.status === "published" || m.status === "approved");
 
                 // A. TYPE FILTERING
                 let filtered = rawData.filter(m => {
