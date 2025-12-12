@@ -38,31 +38,15 @@ export default function HeroSection({ user, googleLogin, router, memes: initialM
     useEffect(() => {
         const fetchHeroMemes = async () => {
             try {
-                // Fetch ALL APPROVED memes (No limit) and filter out Audio
-                const q = query(collection(db, "memes"), where("status", "==", "approved"));
+                // Fetch Top 300 APPROVED memes to ensure a large pool (randomized client-side)
+                const q = query(collection(db, "memes"), where("status", "==", "approved"), orderBy("createdAt", "desc"), limit(300));
                 const snapshot = await getDocs(q);
                 let fetched = snapshot.docs
                     .map(doc => ({ id: doc.id, ...doc.data() }))
                     .filter(m => m.media_type !== "audio" && m.media_type !== "raw" && !m.file_url.endsWith(".mp3"));
 
-                // Weighted Shuffle: Boost popular memes (5-15%)
-                if (fetched.length > 0) {
-                    const maxPop = Math.max(...fetched.map(m => (m.views || 0) + ((m.downloads || 0) * 10)));
-
-                    fetched.sort((a, b) => {
-                        const scoreA = (a.views || 0) + ((a.downloads || 0) * 10);
-                        const scoreB = (b.views || 0) + ((b.downloads || 0) * 10);
-
-                        const normA = maxPop > 0 ? scoreA / maxPop : 0;
-                        const normB = maxPop > 0 ? scoreB / maxPop : 0;
-
-                        // Random + Bonus
-                        const weightA = Math.random() + (normA * 0.15);
-                        const weightB = Math.random() + (normB * 0.15);
-
-                        return weightB - weightA;
-                    });
-                }
+                // Simple Random Shuffle
+                fetched.sort(() => Math.random() - 0.5);
 
                 setHeroMemes(fetched);
             } catch (error) {

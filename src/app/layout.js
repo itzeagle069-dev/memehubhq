@@ -125,6 +125,8 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <JsonLdSchema />
+        <link rel="preconnect" href="https://firebasestorage.googleapis.com" />
+        <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com" />
         {/* Global site tag (gtag.js) - Google Analytics */}
         <Script
           async
