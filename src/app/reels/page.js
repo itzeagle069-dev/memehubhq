@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { ArrowLeft, Send, Heart, MessageCircle, Share2, ChevronUp, ChevronDown, Check, Volume2, Download, X, Play } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/lib/firebase"; // Your firebase config
-import { collection, query, where, getDocs, limit } from "firebase/firestore";
+import { collection, query, where, getDocs, limit, orderBy } from "firebase/firestore";
 import { toast } from "react-hot-toast";
 
 export default function MemeReels() {
@@ -26,12 +26,12 @@ export default function MemeReels() {
         const fetchContent = async () => {
             setLoading(true);
             try {
-                // Fetch approved memes (In a real app, use pagination/infinite scroll)
-                // Fetch approved/published memes
-                // We use orderBy("createdAt", "desc") to get newest first, matching homepage strategy
+                // Fetch memes ordered by creation time (Newest First)
+                // We AVOID using 'where("status")' here to prevent "Missing Index" errors.
+                // We filter status on the CLIENT side instead.
                 const q = query(
                     collection(db, "memes"),
-                    // where("status", "==", "published"), // Removed generic 'where' to rely on client filter or simple ordering to avoid index issues
+                    orderBy("createdAt", "desc"),
                     limit(50)
                 );
                 const snapshot = await getDocs(q);
