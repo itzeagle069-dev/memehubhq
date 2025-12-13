@@ -153,19 +153,28 @@ export default function MemeReels() {
         }
     };
 
-    // Auto play/pause logic with FIX 4: Don't reset currentTime
+    // Autoplay first video on mount
+    useEffect(() => {
+        if (memes.length > 0 && videoRefs.current[0]) {
+            const firstVideo = videoRefs.current[0];
+            // Play first video automatically
+            setTimeout(() => {
+                firstVideo.play().catch(e => {
+                    console.log("Autoplay failed:", e);
+                });
+            }, 100);
+        }
+    }, [memes]);
+
+    // Auto play/pause logic
     useEffect(() => {
         Object.keys(videoRefs.current).forEach((key) => {
             const video = videoRefs.current[key];
             if (video) {
                 const videoIndex = parseInt(key);
                 if (videoIndex === currentIndex) {
-                    // FIX 4: Don't reset, just play if paused
                     if (video.paused) {
-                        video.play().catch(e => {
-                            console.log("Autoplay prevented, user interaction needed");
-                            // If autoplay fails (browser policy), unmute might help
-                        });
+                        video.play().catch(e => console.log("Autoplay prevented"));
                     }
                 } else {
                     video.pause();
@@ -205,11 +214,7 @@ export default function MemeReels() {
         );
     }
 
-    // FIX 1: ONLY RENDER 3 REELS (Virtual Scrolling)
-    const visibleMemes = memes.slice(
-        Math.max(0, currentIndex - 1),
-        currentIndex + 2
-    );
+    // Render ALL memes (removed virtualization that limited to 3)
 
     return (
         <div className="flex h-screen w-screen bg-black text-white font-sans overflow-hidden">
@@ -242,116 +247,112 @@ export default function MemeReels() {
                     onScroll={handleScroll}
                     className="h-full w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth no-scrollbar"
                 >
-                    {visibleMemes.map((meme, i) => {
-                        const index = Math.max(0, currentIndex - 1) + i;
+                    {memes.map((meme, index) => (
+                        <div key={meme.id} className="h-screen w-full snap-start relative flex items-center justify-center overflow-hidden">
+                            {/* Background uses optimized images */}
+                            <div className="absolute inset-0 z-0">
+                                <img
+                                    src={getOptimizedMediaUrl(meme.thumbnail_url || meme.file_url, networkSpeed, 'image')}
+                                    className="w-full h-full object-cover blur-[50px] opacity-40"
+                                    alt=""
+                                />
+                                <div className="absolute inset-0 bg-black/20" />
+                            </div>
 
-                        return (
-                            <div key={meme.id} className="h-screen w-full snap-start relative flex items-center justify-center overflow-hidden">
-                                {/* FIX 2: Background MUST be IMAGE, not video */}
-                                <div className="absolute inset-0 z-0">
-                                    <img
-                                        src={getOptimizedMediaUrl(meme.thumbnail_url || meme.file_url, networkSpeed, 'image')}
-                                        className="w-full h-full object-cover blur-[50px] opacity-40"
-                                        alt=""
-                                    />
-                                    <div className="absolute inset-0 bg-black/20" />
+                            {/* Main Content */}
+                            <div className="relative z-10 h-full w-full max-w-[500px] bg-black shadow-2xl flex flex-col justify-center">
+                                {/* FIX 3: PRELOAD STRATEGY */}
+                                <video
+                                    ref={el => videoRefs.current[index] = el}
+                                    src={getOptimizedMediaUrl(meme.file_url, networkSpeed, 'video')}
+                                    poster={getOptimizedMediaUrl(meme.thumbnail_url, networkSpeed, 'image')}
+                                    preload={index === currentIndex ? "auto" : "metadata"}
+                                    className="w-full h-full object-contain"
+                                    loop
+                                    muted={isMuted}
+                                    playsInline
+                                    onClick={(e) => e.target.paused ? e.target.play() : e.target.pause()}
+                                />
+
+                                {/* Mute/Unmute Button */}
+                                <button
+                                    onClick={() => setIsMuted(!isMuted)}
+                                    className="absolute top-4 left-4 z-30 p-3 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70 transition-all"
+                                >
+                                    {isMuted ? (
+                                        <VolumeX size={24} className="text-red-400" />
+                                    ) : (
+                                        <Volume2 size={24} className="text-yellow-400" />
+                                    )}
+                                </button>
+
+                                {/* Bottom Info Overlay */}
+                                <div className="absolute bottom-0 left-0 w-full p-4 pb-8 bg-gradient-to-t from-black/90 via-black/40 to-transparent pt-24">
+                                    <div className="pr-16">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <h3 className="font-bold text-shadow">@{meme.uploader_name || 'User'}</h3>
+                                        </div>
+                                        <p className="text-white/90 text-sm mb-3 line-clamp-2">{meme.description || meme.title}</p>
+                                    </div>
                                 </div>
 
-                                {/* Main Content */}
-                                <div className="relative z-10 h-full w-full max-w-[500px] bg-black shadow-2xl flex flex-col justify-center">
-                                    {/* FIX 3: PRELOAD STRATEGY */}
-                                    <video
-                                        ref={el => videoRefs.current[index] = el}
-                                        src={getOptimizedMediaUrl(meme.file_url, networkSpeed, 'video')}
-                                        poster={getOptimizedMediaUrl(meme.thumbnail_url, networkSpeed, 'image')}
-                                        preload={index === currentIndex ? "auto" : "metadata"}
-                                        className="w-full h-full object-contain"
-                                        loop
-                                        muted={isMuted}
-                                        playsInline
-                                        onClick={(e) => e.target.paused ? e.target.play() : e.target.pause()}
-                                    />
-
-                                    {/* Mute/Unmute Button */}
+                                {/* Action Buttons */}
+                                <div className="absolute bottom-8 right-2 flex flex-col gap-5 items-center z-20">
+                                    {/* Haha React */}
                                     <button
-                                        onClick={() => setIsMuted(!isMuted)}
-                                        className="absolute top-4 left-4 z-30 p-3 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70 transition-all"
+                                        onClick={(e) => handleReaction(e, meme)}
+                                        className="flex flex-col items-center gap-1 group"
                                     >
-                                        {isMuted ? (
-                                            <VolumeX size={24} className="text-red-400" />
-                                        ) : (
-                                            <Volume2 size={24} className="text-yellow-400" />
-                                        )}
+                                        <div className="p-3 bg-white/10 backdrop-blur-sm rounded-full group-hover:bg-white/20 transition-all">
+                                            <span className={`text-2xl group-active:scale-125 block transition-transform ${meme.reactedBy?.includes(user?.uid) ? 'animate-bounce' : ''}`}>😂</span>
+                                        </div>
+                                        <span className="text-xs font-bold">{meme.reactions?.haha || 0}</span>
                                     </button>
 
-                                    {/* Bottom Info Overlay */}
-                                    <div className="absolute bottom-0 left-0 w-full p-4 pb-8 bg-gradient-to-t from-black/90 via-black/40 to-transparent pt-24">
-                                        <div className="pr-16">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <h3 className="font-bold text-shadow">@{meme.uploader_name || 'User'}</h3>
-                                            </div>
-                                            <p className="text-white/90 text-sm mb-3 line-clamp-2">{meme.description || meme.title}</p>
+                                    {/* Comments */}
+                                    <button
+                                        onClick={() => router.push(`/meme/${meme.id}`)}
+                                        className="flex flex-col items-center gap-1 group"
+                                    >
+                                        <div className="p-3 bg-white/10 backdrop-blur-sm rounded-full group-hover:bg-white/20 transition-all">
+                                            <MessageCircle size={26} fill="white" className="text-white" />
                                         </div>
-                                    </div>
+                                        <span className="text-xs font-bold">{meme.comments_count || 0}</span>
+                                    </button>
 
-                                    {/* Action Buttons */}
-                                    <div className="absolute bottom-8 right-2 flex flex-col gap-5 items-center z-20">
-                                        {/* Haha React */}
-                                        <button
-                                            onClick={(e) => handleReaction(e, meme)}
-                                            className="flex flex-col items-center gap-1 group"
-                                        >
-                                            <div className="p-3 bg-white/10 backdrop-blur-sm rounded-full group-hover:bg-white/20 transition-all">
-                                                <span className={`text-2xl group-active:scale-125 block transition-transform ${meme.reactedBy?.includes(user?.uid) ? 'animate-bounce' : ''}`}>😂</span>
-                                            </div>
-                                            <span className="text-xs font-bold">{meme.reactions?.haha || 0}</span>
-                                        </button>
+                                    {/* Favorite */}
+                                    <button
+                                        onClick={(e) => handleFavorite(e, meme)}
+                                        className="flex flex-col items-center gap-1 group"
+                                    >
+                                        <div className="p-3 bg-white/10 backdrop-blur-sm rounded-full group-hover:bg-white/20 transition-all">
+                                            <Heart
+                                                size={26}
+                                                className={`text-white transition-all ${userFavorites.includes(meme.id) ? 'fill-red-500 text-red-500' : ''}`}
+                                            />
+                                        </div>
+                                        <span className="text-xs font-bold">Save</span>
+                                    </button>
 
-                                        {/* Comments */}
-                                        <button
-                                            onClick={() => router.push(`/meme/${meme.id}`)}
-                                            className="flex flex-col items-center gap-1 group"
-                                        >
-                                            <div className="p-3 bg-white/10 backdrop-blur-sm rounded-full group-hover:bg-white/20 transition-all">
-                                                <MessageCircle size={26} fill="white" className="text-white" />
-                                            </div>
-                                            <span className="text-xs font-bold">{meme.comments_count || 0}</span>
-                                        </button>
+                                    {/* Share */}
+                                    <button className="flex flex-col items-center gap-1 group">
+                                        <div className="p-3 bg-white/10 backdrop-blur-sm rounded-full group-hover:bg-white/20 transition-all">
+                                            <Share2 size={26} className="text-white" />
+                                        </div>
+                                        <span className="text-xs font-bold">Share</span>
+                                    </button>
 
-                                        {/* Favorite */}
-                                        <button
-                                            onClick={(e) => handleFavorite(e, meme)}
-                                            className="flex flex-col items-center gap-1 group"
-                                        >
-                                            <div className="p-3 bg-white/10 backdrop-blur-sm rounded-full group-hover:bg-white/20 transition-all">
-                                                <Heart
-                                                    size={26}
-                                                    className={`text-white transition-all ${userFavorites.includes(meme.id) ? 'fill-red-500 text-red-500' : ''}`}
-                                                />
-                                            </div>
-                                            <span className="text-xs font-bold">Save</span>
-                                        </button>
-
-                                        {/* Share */}
-                                        <button className="flex flex-col items-center gap-1 group">
-                                            <div className="p-3 bg-white/10 backdrop-blur-sm rounded-full group-hover:bg-white/20 transition-all">
-                                                <Share2 size={26} className="text-white" />
-                                            </div>
-                                            <span className="text-xs font-bold">Share</span>
-                                        </button>
-
-                                        {/* Download */}
-                                        <button onClick={() => toast.success("Downloading...")} className="flex flex-col items-center gap-1 group">
-                                            <div className="p-3 bg-white/10 backdrop-blur-sm rounded-full group-hover:bg-white/20 transition-all">
-                                                <Download size={24} className="text-white" />
-                                            </div>
-                                            <span className="text-xs font-bold">DL</span>
-                                        </button>
-                                    </div>
+                                    {/* Download */}
+                                    <button onClick={() => toast.success("Downloading...")} className="flex flex-col items-center gap-1 group">
+                                        <div className="p-3 bg-white/10 backdrop-blur-sm rounded-full group-hover:bg-white/20 transition-all">
+                                            <Download size={24} className="text-white" />
+                                        </div>
+                                        <span className="text-xs font-bold">DL</span>
+                                    </button>
                                 </div>
                             </div>
-                        );
-                    })}
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>
