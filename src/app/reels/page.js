@@ -618,7 +618,7 @@ export default function MemeReels() {
             {/* MAIN CONTENT */}
             <div className="flex-1 relative flex flex-col h-full bg-black">
                 {/* Mobile Top Header (Title, Search, Switcher) */}
-                <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/80 to-transparent md:hidden">
+                <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between pl-3 pr-4 py-3 bg-gradient-to-b from-black/80 to-transparent md:hidden">
                     {/* Title */}
                     <Link href="/" className="font-black text-xl text-white tracking-tighter flex items-center gap-1 shadow-black drop-shadow-md">
                         MemeHub<span className="text-yellow-400">HQ</span>
