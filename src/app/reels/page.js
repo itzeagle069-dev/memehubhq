@@ -7,7 +7,7 @@ import { collection, query, getDocs, orderBy, doc, updateDoc, arrayUnion, arrayR
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { X, ChevronUp, ChevronDown, Heart, MessageCircle, Share2, Download, Volume2 } from 'lucide-react';
+import { X, ChevronUp, ChevronDown, Heart, MessageCircle, Share2, Download, Volume2, VolumeX } from 'lucide-react';
 import { detectNetworkSpeed, getOptimizedMediaUrl } from '@/lib/networkUtils';
 
 export default function MemeReels() {
@@ -20,6 +20,7 @@ export default function MemeReels() {
     const [userFavorites, setUserFavorites] = useState([]);
     const [networkSpeed, setNetworkSpeed] = useState('medium');
     const [hasMore, setHasMore] = useState(true);
+    const [isMuted, setIsMuted] = useState(false); // Default unmuted
 
     const containerRef = useRef(null);
     const videoRefs = useRef({});
@@ -161,7 +162,10 @@ export default function MemeReels() {
                 if (videoIndex === currentIndex) {
                     // FIX 4: Don't reset, just play if paused
                     if (video.paused) {
-                        video.play().catch(e => console.log("Autoplay prevented"));
+                        video.play().catch(e => {
+                            console.log("Autoplay prevented, user interaction needed");
+                            // If autoplay fails (browser policy), unmute might help
+                        });
                     }
                 } else {
                     video.pause();
@@ -263,10 +267,22 @@ export default function MemeReels() {
                                         preload={index === currentIndex ? "auto" : "metadata"}
                                         className="w-full h-full object-contain"
                                         loop
-                                        muted
+                                        muted={isMuted}
                                         playsInline
                                         onClick={(e) => e.target.paused ? e.target.play() : e.target.pause()}
                                     />
+
+                                    {/* Mute/Unmute Button */}
+                                    <button
+                                        onClick={() => setIsMuted(!isMuted)}
+                                        className="absolute top-4 left-4 z-30 p-3 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70 transition-all"
+                                    >
+                                        {isMuted ? (
+                                            <VolumeX size={24} className="text-red-400" />
+                                        ) : (
+                                            <Volume2 size={24} className="text-yellow-400" />
+                                        )}
+                                    </button>
 
                                     {/* Bottom Info Overlay */}
                                     <div className="absolute bottom-0 left-0 w-full p-4 pb-8 bg-gradient-to-t from-black/90 via-black/40 to-transparent pt-24">
