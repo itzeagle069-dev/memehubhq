@@ -38,6 +38,7 @@ export default function MemeReels() {
     const tickingRef = useRef(false);
     const lastTapRef = useRef(0);
     const clickTimerRef = useRef(null);
+    const sidebarSearchInputRef = useRef(null);
 
     const [popReaction, setPopReaction] = useState(null);
     const [hearts, setHearts] = useState([]); // Array of { id, x, y, rotation }
@@ -519,6 +520,7 @@ export default function MemeReels() {
                     <div className="relative">
                         <Search className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'} pointer-events-none`} size={16} />
                         <input
+                            ref={sidebarSearchInputRef}
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -625,7 +627,10 @@ export default function MemeReels() {
                     <div className="flex items-center gap-3">
                         {/* Search Button */}
                         <button
-                            onClick={() => setShowSearch(!showSearch)}
+                            onClick={() => {
+                                setIsSidebarOpen(true);
+                                setTimeout(() => sidebarSearchInputRef.current?.focus(), 100);
+                            }}
                             className="p-2 rounded-full bg-white/10 backdrop-blur-md text-white hover:bg-white/20 transition-colors"
                         >
                             <Search size={20} />
@@ -651,7 +656,7 @@ export default function MemeReels() {
                 {/* Mobile Menu Toggle */}
                 <button
                     onClick={() => setIsSidebarOpen(true)}
-                    className="absolute top-4 left-4 z-30 p-2 bg-black/40 backdrop-blur-md rounded-full text-white md:hidden hover:bg-black/60 transition-colors border border-white/10"
+                    className="absolute top-16 left-4 z-30 p-2 bg-black/40 backdrop-blur-md rounded-full text-white md:hidden hover:bg-black/60 transition-colors border border-white/10"
                 >
                     <Menu size={24} />
                 </button>
