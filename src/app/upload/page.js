@@ -233,7 +233,9 @@ export default function UploadPage() {
         createdAt: serverTimestamp(),
         views: 0,
         downloads: 0,
-        reactions: { haha: 0 }
+        reactions: { haha: 0 },
+        duration: data.duration || 0, // Save duration
+        file_size: data.bytes || 0    // Save file size
       });
 
       toast.success("Submitted for Admin Review!", { id: toastId });
@@ -321,7 +323,9 @@ export default function UploadPage() {
             createdAt: serverTimestamp(),
             views: 0,
             downloads: 0,
-            reactions: { haha: 0 }
+            reactions: { haha: 0 },
+            duration: data.duration || 0, // Save duration
+            file_size: data.bytes || 0    // Save file size
           });
 
           successCount++;
