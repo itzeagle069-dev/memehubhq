@@ -508,6 +508,21 @@ export default function Navbar() {
 
                         {/* Mobile Actions + Menu Button */}
                         <div className="md:hidden flex items-center gap-2">
+                            {/* Mobile View Switcher */}
+                            <div className="flex items-center gap-1 bg-transparent mr-1">
+                                <Link
+                                    href="/"
+                                    className={`p-1.5 rounded-full transition-all duration-300 flex items-center justify-center ${pathname === '/' ? "bg-yellow-400 text-black shadow-lg scale-105" : "text-gray-400 dark:text-gray-300"}`}
+                                >
+                                    <LayoutGrid size={20} />
+                                </Link>
+                                <Link
+                                    href="/reels"
+                                    className={`p-1.5 rounded-full transition-all duration-300 flex items-center justify-center ${pathname?.startsWith('/reels') ? "bg-yellow-400 text-black shadow-lg scale-105" : "text-gray-400 dark:text-gray-300"}`}
+                                >
+                                    <Clapperboard size={20} />
+                                </Link>
+                            </div>
                             {/* Download Bag - Mobile */}
                             <button
                                 onClick={() => setIsDownloadOpen(true)}
