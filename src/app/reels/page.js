@@ -655,7 +655,7 @@ export default function MemeReels() {
                     <Menu size={24} />
                 </button>
                 {searchQuery ? (
-                    <div className="flex-1 overflow-y-auto p-8">
+                    <section className="flex-1 overflow-y-auto p-8">
                         <div className="mb-4 flex items-center justify-between">
                             <h2 className="text-xl font-bold text-white">Results for "{searchQuery}"</h2>
                             <button
@@ -759,274 +759,256 @@ export default function MemeReels() {
                                 })}
                             </div>
                         )}
-                    </div>
+                    </section>
                 ) : (
-                    <>
-                        {/* Top Nav Arrows */}
-                        <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-40 hidden lg:flex pointer-events-none">
-                            <button onClick={() => scrollTo(currentIndex - 1)} disabled={currentIndex === 0} className="pointer-events-auto p-3 bg-gray-800/50 hover:bg-gray-700 rounded-full disabled:opacity-0 transition">
-                                <ChevronUp />
-                            </button>
-                            <button onClick={() => scrollTo(currentIndex + 1)} disabled={currentIndex === memes.length - 1} className="pointer-events-auto p-3 bg-gray-800/50 hover:bg-gray-700 rounded-full disabled:opacity-0 transition">
-                                <ChevronDown />
-                            </button>
-                        </div>
+                    <div
+                        ref={containerRef}
+                        className="relative w-full h-full snap-y snap-mandatory overflow-y-scroll scroll-smooth no-scrollbar"
+                        onScroll={handleScroll}
+                    >
+                        {memes.map((meme, index) => {
+                            const isActive = index === currentIndex;
+                            return (
+                                <div key={meme.id} id={`reel-${index}`} className="relative h-full w-full snap-start flex items-center justify-center bg-black">
+                                    <div className="relative z-10 h-full w-full max-w-[500px] bg-black shadow-2xl flex flex-col justify-center">
 
-                        {/* SCROLL CONTAINER */}
-                        <div
-                            ref={containerRef}
-                            onScroll={handleScroll}
-                            className="h-full w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth no-scrollbar"
-                        >
-                            {memes.map((meme, index) => {
-                                if (meme.type === 'ad') {
-                                    return (
-                                        <div key={meme.id} className="h-screen w-full snap-start relative flex items-center justify-center bg-black overflow-hidden">
-                                            <AdUnit type="reel" />
-                                        </div>
-                                    );
-                                }
-                                return (
-                                    <div key={meme.id} className="h-screen w-full snap-start relative flex items-center justify-center overflow-hidden">
-                                        {/* Background */}
-                                        <div className="absolute inset-0 z-0">
-                                            <img
-                                                src={getOptimizedMediaUrl(meme.thumbnail_url || meme.file_url, networkSpeed, 'image')}
-                                                className="w-full h-full object-cover blur-[50px] opacity-40"
-                                                alt=""
-                                            />
-                                            <div className="absolute inset-0 bg-black/20" />
-                                        </div>
-
-                                        {/* Main Video */}
-                                        <div className="relative z-10 h-full w-full max-w-[500px] bg-black shadow-2xl flex flex-col justify-center">
-                                            {/* Tap Position Hearts Overlay */}
-                                            {hearts.map(heart => (
-                                                <div
-                                                    key={heart.id}
-                                                    className="absolute pointer-events-none z-50 animate-[ping_0.8s_ease-out] fill-mode-forwards"
-                                                    style={{
-                                                        left: heart.x,
-                                                        top: heart.y,
-                                                        transform: `translate(-50%, -50%) rotate(${heart.rotation}deg)`
-                                                    }}
-                                                >
-                                                    <Heart size={100} className="fill-red-500 text-red-500 drop-shadow-2xl" />
-                                                </div>
-                                            ))}
-
-                                            {/* Video Player */}
-                                            <video
-                                                ref={el => videoRefs.current[index] = el}
-                                                src={getOptimizedMediaUrl(meme.file_url, networkSpeed, 'video')}
-                                                poster={getOptimizedMediaUrl(meme.thumbnail_url, networkSpeed, 'image')}
-                                                preload={index === currentIndex ? "auto" : "metadata"}
-                                                className="w-full h-full object-contain"
-                                                loop
-                                                muted={isMuted}
-                                                playsInline
-                                                onClick={(e) => handleVideoClick(e, meme)}
-                                            />
-
-                                            {/* Mute Button - TOP RIGHT */}
-                                            <button
-                                                onClick={() => setIsMuted(!isMuted)}
-                                                className="absolute top-4 right-4 z-30 p-3 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70 transition-all"
+                                        {/* Tap Position Hearts Overlay */}
+                                        {hearts.map(heart => (
+                                            <div
+                                                key={heart.id}
+                                                className="absolute pointer-events-none z-50 animate-[ping_0.8s_ease-out] fill-mode-forwards"
+                                                style={{
+                                                    left: heart.x,
+                                                    top: heart.y,
+                                                    transform: `translate(-50%, -50%) rotate(${heart.rotation}deg)`
+                                                }}
                                             >
-                                                {isMuted ? (
-                                                    <VolumeX size={24} className="text-red-400" />
-                                                ) : (
-                                                    <Volume2 size={24} className="text-yellow-400" />
-                                                )}
+                                                <Heart size={100} className="fill-red-500 text-red-500 drop-shadow-2xl" />
+                                            </div>
+                                        ))}
+
+                                        {/* Play Icon / Pop Reaction */}
+                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-40">
+                                            {popReaction === meme.id ? (
+                                                <div className="animate-[ping_0.8s_ease-out] fill-mode-forwards">
+                                                    <span className="text-9xl drop-shadow-[0_0_25px_rgba(0,0,0,0.5)] filter grayscale-0">😂</span>
+                                                </div>
+                                            ) : (
+                                                <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 p-4 rounded-full backdrop-blur-sm">
+                                                    <Play className="w-12 h-12 text-white fill-white" />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Video Player */}
+                                        <video
+                                            ref={el => videoRefs.current[index] = el}
+                                            src={getOptimizedMediaUrl(meme.file_url, networkSpeed, 'video')}
+                                            poster={getOptimizedMediaUrl(meme.thumbnail_url, networkSpeed, 'image')}
+                                            preload={index === currentIndex ? "auto" : "metadata"}
+                                            className="w-full h-full object-contain"
+                                            loop
+                                            muted={isMuted}
+                                            playsInline
+                                            onClick={(e) => handleVideoClick(e, meme)}
+                                        />
+
+                                        {/* Mute Button - TOP RIGHT */}
+                                        <button
+                                            onClick={() => setIsMuted(!isMuted)}
+                                            className="absolute top-4 right-4 z-30 p-3 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70 transition-all"
+                                        >
+                                            {isMuted ? (
+                                                <VolumeX size={24} className="text-red-400" />
+                                            ) : (
+                                                <Volume2 size={24} className="text-yellow-400" />
+                                            )}
+                                        </button>
+
+                                        {/* Bottom Info */}
+                                        <div className="absolute bottom-0 left-0 w-full p-4 pb-8 bg-gradient-to-t from-black/90 via-black/40 to-transparent pt-24">
+                                            <div className="pr-16">
+                                                <Link href={`/user/${meme.uploader_id || meme.userId}`} className="flex items-center gap-2 mb-2 hover:opacity-80 transition cursor-pointer">
+                                                    <img
+                                                        src={meme.uploader_pic || `https://ui-avatars.com/api/?name=${meme.uploader_name || 'U'}`}
+                                                        className="w-8 h-8 rounded-full border-2 border-white"
+                                                        alt={meme.uploader_name}
+                                                    />
+                                                    <h3 className="font-bold text-white">@{meme.uploader_name || 'User'}</h3>
+                                                </Link>
+                                                <p className="text-sm mb-3 line-clamp-2">{meme.description || meme.title}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Action Buttons - RIGHT SIDE (Lowered for thumb reach) */}
+                                        <div className="absolute bottom-4 right-2 md:right-[-90px] md:bottom-20 flex flex-col gap-6 items-center z-20">
+                                            {/* React */}
+                                            <button onClick={(e) => handleReaction(e, meme)} className="flex flex-col items-center gap-1 group/btn">
+                                                <div className={`p-2 transition-all duration-300 ${meme.reactedBy?.includes(user?.uid) ? 'scale-125' : 'hover:scale-110 opacity-90 hover:opacity-100'} ${popReaction === meme.id ? 'scale-[1.6] rotate-12 duration-200' : ''}`}>
+                                                    <span className={`text-3xl block transition-transform duration-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)] ${meme.reactedBy?.includes(user?.uid) ? 'grayscale-0' : 'grayscale group-hover/btn:grayscale-0'}`}>😂</span>
+                                                </div>
+                                                <span className={`text-xs font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] ${meme.reactedBy?.includes(user?.uid) ? 'text-yellow-400' : 'text-white'}`}>{meme.reactions?.haha || 0}</span>
                                             </button>
 
-                                            {/* Bottom Info */}
-                                            <div className="absolute bottom-0 left-0 w-full p-4 pb-8 bg-gradient-to-t from-black/90 via-black/40 to-transparent pt-24">
-                                                <div className="pr-16">
-                                                    <Link href={`/user/${meme.uploader_id || meme.userId}`} className="flex items-center gap-2 mb-2 hover:opacity-80 transition cursor-pointer">
-                                                        {/* User Profile Picture - Clickable */}
-                                                        <img
-                                                            src={meme.uploader_pic || `https://ui-avatars.com/api/?name=${meme.uploader_name || 'U'}`}
-                                                            className="w-8 h-8 rounded-full border-2 border-white"
-                                                            alt={meme.uploader_name}
-                                                        />
-                                                        {/* Username - Clickable */}
-                                                        <h3 className="font-bold text-white">@{meme.uploader_name || 'User'}</h3>
-                                                    </Link>
-                                                    <p className="text-sm mb-3 line-clamp-2">{meme.description || meme.title}</p>
+                                            {/* Comments */}
+                                            <button onClick={() => setShowComments(!showComments)} className="flex flex-col items-center gap-1 group">
+                                                <div className="p-2 transition-transform duration-300 group-hover:scale-110 opacity-95 group-hover:opacity-100">
+                                                    <MessageCircle size={32} fill={showComments ? "white" : "white"} className={`drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)] ${showComments ? "text-yellow-400 fill-yellow-400" : "text-white"}`} />
                                                 </div>
-                                            </div>
+                                                <span className="text-xs font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{comments.length || 0}</span>
+                                            </button>
 
-                                            {/* Action Buttons - RIGHT SIDE */}
-                                            {/* Action Buttons - RIGHT SIDE (Lowered for thumb reach on mobile, Outside on Desktop) */}
-                                            <div className="absolute bottom-4 right-2 md:right-[-90px] md:bottom-20 flex flex-col gap-6 items-center z-20">
-                                                {/* React */}
-                                                <button onClick={(e) => handleReaction(e, meme)} className="flex flex-col items-center gap-1 group/btn">
-                                                    <div className={`p-2 transition-all duration-300 ${meme.reactedBy?.includes(user?.uid) ? 'scale-125' : 'hover:scale-110 opacity-90 hover:opacity-100'} ${popReaction === meme.id ? 'scale-[1.6] rotate-12 duration-200' : ''}`}>
-                                                        <span className={`text-3xl block transition-transform duration-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)] ${meme.reactedBy?.includes(user?.uid) ? 'grayscale-0' : 'grayscale group-hover/btn:grayscale-0'}`}>😂</span>
-                                                    </div>
-                                                    <span className={`text-xs font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] ${meme.reactedBy?.includes(user?.uid) ? 'text-yellow-400' : 'text-white'}`}>{meme.reactions?.haha || 0}</span>
-                                                </button>
+                                            {/* Favorites */}
+                                            <button onClick={(e) => handleFavorite(e, meme)} className="flex flex-col items-center gap-1 group">
+                                                <div className="p-2 transition-transform duration-300 group-hover:scale-110 opacity-95 group-hover:opacity-100">
+                                                    <Star
+                                                        size={32}
+                                                        className={`drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)] transition-colors ${userFavorites.includes(meme.id) ? 'fill-yellow-400 text-yellow-400' : 'text-white'}`}
+                                                    />
+                                                </div>
+                                                <span className="text-xs font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Favorite</span>
+                                            </button>
 
-                                                {/* Comments */}
-                                                <button onClick={() => setShowComments(!showComments)} className="flex flex-col items-center gap-1 group">
-                                                    <div className="p-2 transition-transform duration-300 group-hover:scale-110 opacity-95 group-hover:opacity-100">
-                                                        <MessageCircle size={32} fill={showComments ? "white" : "white"} className={`drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)] ${showComments ? "text-yellow-400 fill-yellow-400" : "text-white"}`} />
-                                                    </div>
-                                                    <span className="text-xs font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{comments.length || 0}</span>
-                                                </button>
+                                            {/* Download */}
+                                            <button
+                                                onClick={() => {
+                                                    const link = document.createElement('a');
+                                                    link.href = meme.file_url;
+                                                    link.download = `${meme.title || 'meme'}.mp4`;
+                                                    link.click();
+                                                    toast.success('Downloading...');
+                                                }}
+                                                className="flex flex-col items-center gap-1 group"
+                                            >
+                                                <div className="p-2 transition-transform duration-300 group-hover:scale-110 opacity-95 group-hover:opacity-100">
+                                                    <Download size={30} className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]" />
+                                                </div>
+                                                <span className="text-xs font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">DL</span>
+                                            </button>
 
-                                                {/* Favorites - Star Icon */}
-                                                <button onClick={(e) => handleFavorite(e, meme)} className="flex flex-col items-center gap-1 group">
-                                                    <div className="p-2 transition-transform duration-300 group-hover:scale-110 opacity-95 group-hover:opacity-100">
-                                                        <Star
-                                                            size={32}
-                                                            className={`drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)] transition-colors ${userFavorites.includes(meme.id) ? 'fill-yellow-400 text-yellow-400' : 'text-white'}`}
-                                                        />
-                                                    </div>
-                                                    <span className="text-xs font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Favorite</span>
-                                                </button>
-
-                                                {/* Download */}
-                                                <button
-                                                    onClick={() => {
-                                                        const link = document.createElement('a');
-                                                        link.href = meme.file_url;
-                                                        link.download = `${meme.title || 'meme'}.mp4`;
-                                                        link.click();
-                                                        toast.success('Downloading...');
-                                                    }}
-                                                    className="flex flex-col items-center gap-1 group"
-                                                >
-                                                    <div className="p-2 transition-transform duration-300 group-hover:scale-110 opacity-95 group-hover:opacity-100">
-                                                        <Download size={30} className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]" />
-                                                    </div>
-                                                    <span className="text-xs font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">DL</span>
-                                                </button>
-
-                                                {/* Share */}
-                                                <button className="flex flex-col items-center gap-1 group">
-                                                    <div className="p-2 transition-transform duration-300 group-hover:scale-110 opacity-95 group-hover:opacity-100">
-                                                        <Share2 size={30} className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]" />
-                                                    </div>
-                                                    <span className="text-xs font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Share</span>
-                                                </button>
-                                            </div>
+                                            {/* Share */}
+                                            <button className="flex flex-col items-center gap-1 group">
+                                                <div className="p-2 transition-transform duration-300 group-hover:scale-110 opacity-95 group-hover:opacity-100">
+                                                    <Share2 size={30} className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]" />
+                                                </div>
+                                                <span className="text-xs font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Share</span>
+                                            </button>
                                         </div>
                                     </div>
-                                );
-                            })}
-                        </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>
             {/* COMMENTS PANEL - RIGHT SIDE (Responsive Drawer) */}
-            {showComments && (
-                <>
-                    {/* Mobile Backdrop */}
-                    <div
-                        className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
-                        onClick={() => setShowComments(false)}
-                    />
+            {
+                showComments && (
+                    <>
+                        {/* Mobile Backdrop */}
+                        <div
+                            className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
+                            onClick={() => setShowComments(false)}
+                        />
 
-                    {/* Comments Drawer (Mobile) / Panel (Desktop) */}
-                    <div className="fixed inset-x-0 bottom-0 z-50 h-[75vh] w-full rounded-t-3xl border-t border-gray-800 bg-[#0f0f0f] md:bg-black md:static md:h-auto md:w-[400px] md:border-l md:border-t-0 md:rounded-none flex flex-col transform transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none animate-in slide-in-from-bottom duration-300 md:animate-none">
-                        <div className="flex items-center justify-between p-4 border-b border-gray-800 relative">
-                            {/* Mobile Drag Handle Visual */}
-                            <div className="md:hidden w-12 h-1.5 bg-gray-700 rounded-full absolute left-1/2 -translate-x-1/2 top-3 opacity-50" />
+                        {/* Comments Drawer (Mobile) / Panel (Desktop) */}
+                        <div className="fixed inset-x-0 bottom-0 z-50 h-[75vh] w-full rounded-t-3xl border-t border-gray-800 bg-[#0f0f0f] md:bg-black md:static md:h-auto md:w-[400px] md:border-l md:border-t-0 md:rounded-none flex flex-col transform transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none animate-in slide-in-from-bottom duration-300 md:animate-none">
+                            <div className="flex items-center justify-between p-4 border-b border-gray-800 relative">
+                                {/* Mobile Drag Handle Visual */}
+                                <div className="md:hidden w-12 h-1.5 bg-gray-700 rounded-full absolute left-1/2 -translate-x-1/2 top-3 opacity-50" />
 
-                            <h2 className="font-bold text-lg mt-2 md:mt-0">Comments ({comments.length})</h2>
-                            <button onClick={() => setShowComments(false)} className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white">
-                                <X size={20} />
-                            </button>
-                        </div>
+                                <h2 className="font-bold text-lg mt-2 md:mt-0">Comments ({comments.length})</h2>
+                                <button onClick={() => setShowComments(false)} className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white">
+                                    <X size={20} />
+                                </button>
+                            </div>
 
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                            {loadingComments ? (
-                                <div className="text-center py-8">
-                                    <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                                </div>
-                            ) : comments.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500">
-                                    <p>No comments yet</p>
-                                    <p className="text-sm">Be the first to comment!</p>
-                                </div>
-                            ) : (
-                                comments.map((comment) => (
-                                    <div key={comment.id} className="space-y-2">
-                                        <div className="flex gap-3">
-                                            <img
-                                                src={comment.userPhoto || `https://ui-avatars.com/api/?name=${comment.userName}`}
-                                                className="w-8 h-8 rounded-full"
-                                                alt={comment.userName}
-                                            />
-                                            <div className="flex-1">
-                                                <p className="font-bold text-sm">{comment.userName}</p>
-                                                {comment.replyToUser && (
-                                                    <p className="text-xs text-gray-500">
-                                                        Replying to @{comment.replyToUser}
-                                                    </p>
-                                                )}
-                                                <p className="text-sm text-gray-300">{comment.text}</p>
-                                                <div className="flex items-center gap-4 mt-1">
-                                                    <button
-                                                        onClick={() => setReplyTo({ id: comment.id, userName: comment.userName })}
-                                                        className="text-xs text-gray-500 hover:text-white"
-                                                    >
-                                                        Reply
-                                                    </button>
-                                                    <span className="text-xs text-gray-500">{comment.likes || 0} likes</span>
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                {loadingComments ? (
+                                    <div className="text-center py-8">
+                                        <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                                    </div>
+                                ) : comments.length === 0 ? (
+                                    <div className="text-center py-8 text-gray-500">
+                                        <p>No comments yet</p>
+                                        <p className="text-sm">Be the first to comment!</p>
+                                    </div>
+                                ) : (
+                                    comments.map((comment) => (
+                                        <div key={comment.id} className="space-y-2">
+                                            <div className="flex gap-3">
+                                                <img
+                                                    src={comment.userPhoto || `https://ui-avatars.com/api/?name=${comment.userName}`}
+                                                    className="w-8 h-8 rounded-full"
+                                                    alt={comment.userName}
+                                                />
+                                                <div className="flex-1">
+                                                    <p className="font-bold text-sm">{comment.userName}</p>
+                                                    {comment.replyToUser && (
+                                                        <p className="text-xs text-gray-500">
+                                                            Replying to @{comment.replyToUser}
+                                                        </p>
+                                                    )}
+                                                    <p className="text-sm text-gray-300">{comment.text}</p>
+                                                    <div className="flex items-center gap-4 mt-1">
+                                                        <button
+                                                            onClick={() => setReplyTo({ id: comment.id, userName: comment.userName })}
+                                                            className="text-xs text-gray-500 hover:text-white"
+                                                        >
+                                                            Reply
+                                                        </button>
+                                                        <span className="text-xs text-gray-500">{comment.likes || 0} likes</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
+                                    ))
+                                )}
+                            </div>
 
-                        {/* Comment Input */}
-                        <div className="p-4 border-t border-gray-800">
-                            {user ? (
-                                <div className="space-y-2">
-                                    {replyTo && (
-                                        <div className="flex items-center justify-between bg-white/5 px-3 py-2 rounded-lg">
-                                            <span className="text-xs text-gray-400">
-                                                Replying to <span className="font-bold">@{replyTo.userName}</span>
-                                            </span>
+                            {/* Comment Input */}
+                            <div className="p-4 border-t border-gray-800">
+                                {user ? (
+                                    <div className="space-y-2">
+                                        {replyTo && (
+                                            <div className="flex items-center justify-between bg-white/5 px-3 py-2 rounded-lg">
+                                                <span className="text-xs text-gray-400">
+                                                    Replying to <span className="font-bold">@{replyTo.userName}</span>
+                                                </span>
+                                                <button
+                                                    onClick={() => setReplyTo(null)}
+                                                    className="text-gray-500 hover:text-white"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+                                        )}
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={newComment}
+                                                onChange={(e) => setNewComment(e.target.value)}
+                                                onKeyPress={(e) => e.key === 'Enter' && handleAddComment()}
+                                                placeholder={replyTo ? `Reply to @${replyTo.userName}...` : "Add a comment..."}
+                                                className="flex-1 bg-white/10 border border-gray-700 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-yellow-400"
+                                            />
                                             <button
-                                                onClick={() => setReplyTo(null)}
-                                                className="text-gray-500 hover:text-white"
+                                                onClick={handleAddComment}
+                                                className="p-2 bg-yellow-400 hover:bg-yellow-500 rounded-full transition"
                                             >
-                                                <X size={16} />
+                                                <Send size={20} className="text-black" />
                                             </button>
                                         </div>
-                                    )}
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={newComment}
-                                            onChange={(e) => setNewComment(e.target.value)}
-                                            onKeyPress={(e) => e.key === 'Enter' && handleAddComment()}
-                                            placeholder={replyTo ? `Reply to @${replyTo.userName}...` : "Add a comment..."}
-                                            className="flex-1 bg-white/10 border border-gray-700 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-yellow-400"
-                                        />
-                                        <button
-                                            onClick={handleAddComment}
-                                            className="p-2 bg-yellow-400 hover:bg-yellow-500 rounded-full transition"
-                                        >
-                                            <Send size={20} className="text-black" />
-                                        </button>
                                     </div>
-                                </div>
-                            ) : (
-                                <button onClick={() => router.push('/')} className="w-full py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-full">
-                                    Log in to comment
-                                </button>
-                            )}
+                                ) : (
+                                    <button onClick={() => router.push('/')} className="w-full py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-full">
+                                        Log in to comment
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                </>
-            )
+                    </>
+                )
             }
         </div >
     );
