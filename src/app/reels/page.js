@@ -789,7 +789,7 @@ export default function MemeReels() {
                                                     transform: `translate(-50%, -50%) rotate(${heart.rotation}deg)`
                                                 }}
                                             >
-                                                <Heart size={100} className="fill-red-500 text-red-500 drop-shadow-2xl" />
+                                                <span className="text-6xl drop-shadow-2xl select-none">😂</span>
                                             </div>
                                         ))}
 
@@ -797,7 +797,7 @@ export default function MemeReels() {
                                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-40">
                                             {popReaction === meme.id ? (
                                                 <div className="animate-[ping_0.8s_ease-out] fill-mode-forwards">
-                                                    <span className="text-9xl drop-shadow-[0_0_25px_rgba(0,0,0,0.5)] filter grayscale-0">😂</span>
+                                                    <span className="text-7xl drop-shadow-[0_0_25px_rgba(0,0,0,0.5)] filter grayscale-0">😂</span>
                                                 </div>
                                             ) : (
                                                 <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 p-4 rounded-full backdrop-blur-sm">
