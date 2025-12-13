@@ -39,7 +39,7 @@ export default function MemeReels() {
     const lastTapRef = useRef(0);
     const clickTimerRef = useRef(null);
 
-    const [popReaction, setPopReaction] = useState(null); // { id: memeId } to show pop
+    const [hearts, setHearts] = useState([]); // Array of { id, x, y, rotation }
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     // Detect network speed
@@ -341,7 +341,23 @@ export default function MemeReels() {
             if (!meme.reactedBy?.includes(user?.uid)) {
                 handleReaction(e, meme);
             }
-            // Always show pop animation for feedback
+
+            // Spawn Heart at Tap Position
+            // Get click coordinates relative to the video container
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const rotation = Math.random() * 40 - 20; // Random rotation -20 to 20 deg
+
+            const newHeart = { id: Date.now(), x, y, rotation };
+            setHearts(prev => [...prev, newHeart]);
+
+            // Remove heart after animation (1s)
+            setTimeout(() => {
+                setHearts(prev => prev.filter(h => h.id !== newHeart.id));
+            }, 1000);
+
+            // Also trigger the center pop for extra impact (optional, keeping it for now)
             setPopReaction(meme.id);
             setTimeout(() => setPopReaction(null), 1000);
         } else {
@@ -598,6 +614,39 @@ export default function MemeReels() {
 
             {/* MAIN CONTENT */}
             <div className="flex-1 relative flex flex-col h-full bg-black">
+                {/* Mobile Top Header (Title, Search, Switcher) */}
+                <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/80 to-transparent md:hidden">
+                    {/* Title */}
+                    <Link href="/" className="font-black text-xl text-white tracking-tighter flex items-center gap-1 shadow-black drop-shadow-md">
+                        MemeHub<span className="text-yellow-400">HQ</span>
+                    </Link>
+
+                    <div className="flex items-center gap-3">
+                        {/* Search Button */}
+                        <button
+                            onClick={() => setShowSearch(!showSearch)}
+                            className="p-2 rounded-full bg-white/10 backdrop-blur-md text-white hover:bg-white/20 transition-colors"
+                        >
+                            <Search size={20} />
+                        </button>
+
+                        {/* Switcher */}
+                        <div className="flex items-center gap-1 bg-black/40 backdrop-blur-md rounded-full p-1">
+                            <Link
+                                href="/"
+                                className="p-1.5 rounded-full text-gray-300 hover:text-white transition-colors"
+                            >
+                                <LayoutGrid size={18} />
+                            </Link>
+                            <Link
+                                href="/reels"
+                                className="p-1.5 rounded-full bg-yellow-400 text-black shadow-lg"
+                            >
+                                <Clapperboard size={18} />
+                            </Link>
+                        </div>
+                    </div>
+                </div>
                 {/* Mobile Menu Toggle */}
                 <button
                     onClick={() => setIsSidebarOpen(true)}
@@ -751,6 +800,22 @@ export default function MemeReels() {
 
                                         {/* Main Video */}
                                         <div className="relative z-10 h-full w-full max-w-[500px] bg-black shadow-2xl flex flex-col justify-center">
+                                            {/* Tap Position Hearts Overlay */}
+                                            {hearts.map(heart => (
+                                                <div
+                                                    key={heart.id}
+                                                    className="absolute pointer-events-none z-50 animate-[ping_0.8s_ease-out] fill-mode-forwards"
+                                                    style={{
+                                                        left: heart.x,
+                                                        top: heart.y,
+                                                        transform: `translate(-50%, -50%) rotate(${heart.rotation}deg)`
+                                                    }}
+                                                >
+                                                    <Heart size={100} className="fill-red-500 text-red-500 drop-shadow-2xl" />
+                                                </div>
+                                            ))}
+
+                                            {/* Video Player */}
                                             <video
                                                 ref={el => videoRefs.current[index] = el}
                                                 src={getOptimizedMediaUrl(meme.file_url, networkSpeed, 'video')}
@@ -852,16 +917,26 @@ export default function MemeReels() {
                                 );
                             })}
                         </div>
-                    </>
+                    </div>
                 )}
             </div>
-            {/* COMMENTS PANEL - RIGHT SIDE */}
-            {
-                showComments && (
-                    <div className="w-[400px] bg-black border-l border-gray-800 flex flex-col">
-                        <div className="flex items-center justify-between p-4 border-b border-gray-800">
-                            <h2 className="font-bold text-lg">Comments ({comments.length})</h2>
-                            <button onClick={() => setShowComments(false)} className="p-2 hover:bg-white/10 rounded-full">
+            {/* COMMENTS PANEL - RIGHT SIDE (Responsive Drawer) */}
+            {showComments && (
+                <>
+                    {/* Mobile Backdrop */}
+                    <div
+                        className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
+                        onClick={() => setShowComments(false)}
+                    />
+
+                    {/* Comments Drawer (Mobile) / Panel (Desktop) */}
+                    <div className="fixed inset-x-0 bottom-0 z-50 h-[75vh] w-full rounded-t-3xl border-t border-gray-800 bg-[#0f0f0f] md:bg-black md:static md:h-auto md:w-[400px] md:border-l md:border-t-0 md:rounded-none flex flex-col transform transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none animate-in slide-in-from-bottom duration-300 md:animate-none">
+                        <div className="flex items-center justify-between p-4 border-b border-gray-800 relative">
+                            {/* Mobile Drag Handle Visual */}
+                            <div className="md:hidden w-12 h-1.5 bg-gray-700 rounded-full absolute left-1/2 -translate-x-1/2 top-3 opacity-50" />
+
+                            <h2 className="font-bold text-lg mt-2 md:mt-0">Comments ({comments.length})</h2>
+                            <button onClick={() => setShowComments(false)} className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white">
                                 <X size={20} />
                             </button>
                         </div>
@@ -950,7 +1025,8 @@ export default function MemeReels() {
                             )}
                         </div>
                     </div>
-                )
+                </>
+            )
             }
         </div >
     );
