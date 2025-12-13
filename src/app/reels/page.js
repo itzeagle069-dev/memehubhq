@@ -39,6 +39,7 @@ export default function MemeReels() {
     const lastTapRef = useRef(0);
     const clickTimerRef = useRef(null);
 
+    const [popReaction, setPopReaction] = useState(null);
     const [hearts, setHearts] = useState([]); // Array of { id, x, y, rotation }
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
