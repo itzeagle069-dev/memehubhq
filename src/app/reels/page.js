@@ -491,7 +491,7 @@ export default function MemeReels() {
     const currentMeme = memes[currentIndex];
 
     return (
-        <div className={`flex h-screen w-screen font-sans overflow-hidden ${isDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}>
+        <div className={`flex h-screen w-screen font-sans overflow-hidden ${isDarkMode ? 'bg-black text-white' : 'bg-white text-black'} md:mt-16 md:h-[calc(100vh-64px)]`}>
             {/* Mobile Sidebar Overlay */}
             {isSidebarOpen && (
                 <div
@@ -502,7 +502,7 @@ export default function MemeReels() {
 
             {/* LEFT SIDEBAR - TikTok Style - Responsive Drawer */}
             <div className={`fixed inset-y-0 left-0 z-50 w-[260px] flex-col p-4 transform transition-transform duration-300 md:relative md:translate-x-0 md:w-[240px] md:flex ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'} ${isDarkMode ? 'bg-black border-r border-gray-800' : 'bg-white border-r border-gray-200'}`}>
-                <div className="flex items-center justify-between mb-6 px-2">
+                <div className="flex items-center justify-between mb-6 px-2 md:hidden">
                     <Link href="/" className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
                             <span className="text-xl">😂</span>
@@ -516,7 +516,7 @@ export default function MemeReels() {
                 </div>
 
                 {/* Search Input - TikTok Style */}
-                <div className="mb-4 px-2">
+                <div className="mb-4 px-2 md:hidden">
                     <div className="relative">
                         <Search className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'} pointer-events-none`} size={16} />
                         <input
@@ -531,7 +531,7 @@ export default function MemeReels() {
                 </div>
 
                 {/* Grid/Reel Switcher */}
-                <div className="mx-2 mb-6 flex items-center justify-center gap-3 bg-transparent">
+                <div className="mx-2 mb-6 flex items-center justify-center gap-3 bg-transparent md:hidden">
                     <Link
                         href="/"
                         className={`p-3 rounded-full transition-all duration-300 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#1f1f1f] border border-transparent`}
