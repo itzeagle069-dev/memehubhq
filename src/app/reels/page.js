@@ -7,7 +7,7 @@ import { collection, query, getDocs, orderBy, doc, updateDoc, arrayUnion, arrayR
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { X, ChevronUp, ChevronDown, Heart, MessageCircle, Share2, Download, Volume2, VolumeX, Send, Home, Compass, Users, Video, Upload, User, MoreHorizontal, Bookmark, Moon, Sun, FileQuestion, Star, LogIn, LayoutGrid, Search, Play, Clapperboard } from 'lucide-react';
+import { Menu, X, ChevronUp, ChevronDown, Heart, MessageCircle, Share2, Download, Volume2, VolumeX, Send, Home, Compass, Users, Video, Upload, User, MoreHorizontal, Bookmark, Moon, Sun, FileQuestion, Star, LogIn, LayoutGrid, Search, Play, Clapperboard } from 'lucide-react';
 import { detectNetworkSpeed, getOptimizedMediaUrl } from '@/lib/networkUtils';
 import AdUnit from '@/components/AdUnit';
 
@@ -40,6 +40,7 @@ export default function MemeReels() {
     const clickTimerRef = useRef(null);
 
     const [popReaction, setPopReaction] = useState(null); // { id: memeId } to show pop
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     // Detect network speed
     useEffect(() => {
@@ -473,14 +474,28 @@ export default function MemeReels() {
 
     return (
         <div className={`flex h-screen w-screen font-sans overflow-hidden ${isDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}>
-            {/* LEFT SIDEBAR - TikTok Style - ALWAYS VISIBLE */}
-            <div className={`flex w-[240px] flex-col p-4 ${isDarkMode ? 'bg-black border-r border-gray-800' : 'bg-gray-100 border-r border-gray-300'}`}>
-                <Link href="/" className="flex items-center gap-2 mb-4 px-2">
-                    <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
-                        <span className="text-xl">😂</span>
-                    </div>
-                    <h1 className="font-bold text-xl">MemeHub</h1>
-                </Link>
+            {/* Mobile Sidebar Overlay */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
+            {/* LEFT SIDEBAR - TikTok Style - Responsive Drawer */}
+            <div className={`fixed inset-y-0 left-0 z-50 w-[260px] flex-col p-4 transform transition-transform duration-300 md:relative md:translate-x-0 md:w-[240px] md:flex ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'} ${isDarkMode ? 'bg-black border-r border-gray-800' : 'bg-white border-r border-gray-200'}`}>
+                <div className="flex items-center justify-between mb-6 px-2">
+                    <Link href="/" className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
+                            <span className="text-xl">😂</span>
+                        </div>
+                        <h1 className="font-bold text-xl">MemeHub</h1>
+                    </Link>
+                    {/* Close Button Mobile */}
+                    <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-1 text-gray-500 hover:text-white transition-colors">
+                        <X size={24} />
+                    </button>
+                </div>
 
                 {/* Search Input - TikTok Style */}
                 <div className="mb-4 px-2">
@@ -583,6 +598,13 @@ export default function MemeReels() {
 
             {/* MAIN CONTENT */}
             <div className="flex-1 relative flex flex-col h-full bg-black">
+                {/* Mobile Menu Toggle */}
+                <button
+                    onClick={() => setIsSidebarOpen(true)}
+                    className="absolute top-4 left-4 z-30 p-2 bg-black/40 backdrop-blur-md rounded-full text-white md:hidden hover:bg-black/60 transition-colors border border-white/10"
+                >
+                    <Menu size={24} />
+                </button>
                 {searchQuery ? (
                     <div className="flex-1 overflow-y-auto p-8">
                         <div className="mb-4 flex items-center justify-between">
