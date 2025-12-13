@@ -859,7 +859,7 @@ export default function MemeReels() {
 
                                             {/* Action Buttons - RIGHT SIDE */}
                                             {/* Action Buttons - RIGHT SIDE (Lowered for thumb reach on mobile, Outside on Desktop) */}
-                                            <div className="absolute bottom-10 right-2 md:right-[-90px] md:bottom-28 flex flex-col gap-6 items-center z-20">
+                                            <div className="absolute bottom-4 right-2 md:right-[-90px] md:bottom-20 flex flex-col gap-6 items-center z-20">
                                                 {/* React */}
                                                 <button onClick={(e) => handleReaction(e, meme)} className="flex flex-col items-center gap-1 group/btn">
                                                     <div className={`p-2 transition-all duration-300 ${meme.reactedBy?.includes(user?.uid) ? 'scale-125' : 'hover:scale-110 opacity-90 hover:opacity-100'} ${popReaction === meme.id ? 'scale-[1.6] rotate-12 duration-200' : ''}`}>
