@@ -1342,13 +1342,7 @@ function HomeContent() {
             </div>
 
             {/* SWITCH TO REELS FLOATING BUTTON */}
-            <Link
-                href="/reels"
-                className="fixed bottom-24 right-8 z-50 flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full font-bold shadow-2xl hover:scale-105 transition-transform animate-bounce-slow border border-white/20"
-            >
-                <Clapperboard size={20} className="fill-white/20" />
-                <span>Reel Mode</span>
-            </Link>
+
         </div>
     );
 }

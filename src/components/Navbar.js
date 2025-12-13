@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useDownloadList } from "@/context/DownloadContext";
-import { Menu, X, Search, Upload, LogOut, User as UserIcon, Sun, Moon, ChevronDown, ShoppingBag, Trash2, ShieldAlert, Download, Filter, Check, Star, Music } from "lucide-react";
+import { Menu, X, Search, Upload, LogOut, User as UserIcon, Sun, Moon, ChevronDown, ShoppingBag, Trash2, ShieldAlert, Download, Filter, Check, Star, Music, LayoutGrid, Clapperboard } from "lucide-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
@@ -245,8 +245,9 @@ export default function Navbar() {
                         </Link>
 
                         {/* Desktop Navigation */}
-                        <div className="hidden md:flex items-center gap-4 lg:gap-8">
-                            <div className="relative group" ref={filterRef}>
+                        {/* Center Search - Moved Here */}
+                        <div className="hidden md:flex flex-1 justify-center max-w-2xl px-8 z-50">
+                            <div className="relative group w-full" ref={filterRef}>
                                 <form onSubmit={handleSearch} className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <Search className={`h-4 w-4 group-focus-within:text-yellow-400 transition-colors ${isScrolled ? "text-gray-400" : "text-white/60"}`} />
@@ -256,7 +257,7 @@ export default function Navbar() {
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         placeholder="Search..."
-                                        className="bg-gray-100 dark:bg-[#1a1a1a] text-black dark:text-white text-sm rounded-full pl-10 pr-10 py-2 w-40 lg:w-72 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all"
+                                        className="bg-gray-100 dark:bg-[#1a1a1a] text-black dark:text-white text-sm rounded-full pl-10 pr-10 py-2 w-full focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all"
                                     />
                                     <button
                                         type="button"
@@ -387,7 +388,10 @@ export default function Navbar() {
                                     </div>
                                 )}
                             </div>
+                        </div>
 
+                        {/* Right Actions */}
+                        <div className="hidden md:flex items-center gap-4 lg:gap-6">
                             <div className={`flex items-center gap-3 lg:gap-6 text-sm font-medium transition-colors ${isScrolled ? "text-gray-600 dark:text-gray-300" : "text-white/90 hover:text-white"}`}>
                                 <Link href="/upload" className="hover:text-yellow-400 transition-colors flex items-center gap-1">
                                     <Upload size={18} />
@@ -429,6 +433,24 @@ export default function Navbar() {
                             </div>
 
                             <div className="flex items-center gap-4">
+                                {/* VIEW SWITCHER */}
+                                <div className="hidden md:flex items-center gap-2 bg-transparent mr-4">
+                                    <Link
+                                        href="/"
+                                        className={`p-2 rounded-full transition-all duration-300 flex items-center justify-center ${pathname === '/' ? "bg-yellow-400 text-black shadow-lg scale-110 font-bold" : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#1f1f1f]"}`}
+                                        title="Grid View"
+                                    >
+                                        <LayoutGrid size={22} className={pathname === '/' ? "stroke-[2.5px]" : "stroke-[2px]"} />
+                                    </Link>
+                                    <Link
+                                        href="/reels"
+                                        className={`p-2 rounded-full transition-all duration-300 flex items-center justify-center ${pathname?.startsWith('/reels') ? "bg-yellow-400 text-black shadow-lg scale-110 font-bold" : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#1f1f1f]"}`}
+                                        title="Reel View"
+                                    >
+                                        <Clapperboard size={22} className={pathname?.startsWith('/reels') ? "stroke-[2.5px] fill-black/10" : "stroke-[2px]"} />
+                                    </Link>
+                                </div>
+
                                 <button onClick={toggleTheme} className={`p-2 rounded-full transition-colors ${isScrolled ? "hover:bg-gray-100 dark:hover:bg-[#1a1a1a] text-gray-600 dark:text-gray-300" : "hover:bg-white/10 text-white"}`}>
                                     {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
                                 </button>

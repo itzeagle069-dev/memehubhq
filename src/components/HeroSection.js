@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Sparkles, Volume2, VolumeX, Play, Pause } from "lucide-react";
+import Link from "next/link";
+import { Sparkles, Volume2, VolumeX, Play, Pause, Clapperboard } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
 import { detectNetworkSpeed, getOptimizedMediaUrl } from "@/lib/networkUtils";
@@ -135,7 +136,7 @@ export default function HeroSection({ user, googleLogin, router, memes: initialM
         }, 800);
     };
 
-    // Initialize First Meme
+    // Initialize First Meme & Sync to Session Storage for Smart Transition
     useEffect(() => {
         if (activePool && activePool.length > 0 && !currentMeme) {
             const random = activePool[Math.floor(Math.random() * activePool.length)];
@@ -144,6 +145,13 @@ export default function HeroSection({ user, googleLogin, router, memes: initialM
             setHistory([random.id]);
         }
     }, [activePool]);
+
+    // Save ID to session storage for Reels transition
+    useEffect(() => {
+        if (currentMeme?.id) {
+            sessionStorage.setItem('smart_reel_start_id', currentMeme.id);
+        }
+    }, [currentMeme]);
 
     // IMAGE Handling: Fallback interval if it's NOT a video
     useEffect(() => {
@@ -339,37 +347,39 @@ export default function HeroSection({ user, googleLogin, router, memes: initialM
             </div>
 
             {/* 5. PREVIEW HINT & MUTE CONTROL */}
-            <div className={`absolute bottom-8 right-8 z-30 flex items-center gap-4 transition-opacity duration-500 ${showExplore ? "opacity-100" : "opacity-0"}`}>
+            <div className={`absolute bottom-8 right-8 z-30 flex flex-col items-center gap-3 transition-opacity duration-500 ${showExplore ? "opacity-100" : "opacity-0"}`}>
 
-                {/* Text Hint */}
-                <div className="flex items-center gap-2 text-white/50 font-medium text-xs pointer-events-none">
-                    <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
-                    <span className="animate-pulse">Previewing • Click to Watch</span>
+                <div className="flex items-center gap-4">
+                    {/* Text Hint */}
+                    <div className="flex items-center gap-2 text-white/50 font-medium text-xs pointer-events-none hidden md:flex">
+                        <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+                        <span className="animate-pulse">Previewing</span>
+                    </div>
+
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsPlaying(!isPlaying);
+                        }}
+                        className="p-3 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white rounded-full backdrop-blur-md transition-all hover:scale-105 border border-white/5"
+                        title={isPlaying ? "Pause to save data" : "Play"}
+                    >
+                        {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                    </button>
+
+                    {/* Mute Button */}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            const newMuteState = !isMuted;
+                            setIsMuted(newMuteState);
+                            setUserWantsAudio(!newMuteState); // If unmuted, user wants audio
+                        }}
+                        className="p-3 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white rounded-full backdrop-blur-md transition-all hover:scale-105 border border-white/5"
+                    >
+                        {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                    </button>
                 </div>
-
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setIsPlaying(!isPlaying);
-                    }}
-                    className="p-3 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white rounded-full backdrop-blur-md transition-all hover:scale-105 border border-white/5"
-                    title={isPlaying ? "Pause to save data" : "Play"}
-                >
-                    {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-                </button>
-
-                {/* Mute Button */}
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        const newMuteState = !isMuted;
-                        setIsMuted(newMuteState);
-                        setUserWantsAudio(!newMuteState); // If unmuted, user wants audio
-                    }}
-                    className="p-3 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white rounded-full backdrop-blur-md transition-all hover:scale-105 border border-white/5"
-                >
-                    {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-                </button>
             </div>
 
             {/* 6. SCROLL DOWN INDICATOR */}
