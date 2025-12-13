@@ -2,22 +2,36 @@
 
 import { useEffect, useState, useRef } from "react";
 import { Sparkles, Volume2, VolumeX, Play, Pause } from "lucide-react";
-import { db } from "@/lib/firebase"; // Import db
-import { collection, query, where, orderBy, limit, getDocs } from "firebase/firestore"; // Import Firestore functions
+import { db } from "@/lib/firebase";
+import { collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
+import { detectNetworkSpeed, getOptimizedMediaUrl } from "@/lib/networkUtils";
 
 export default function HeroSection({ user, googleLogin, router, memes: initialMemes, openMeme }) {
-    const [heroMemes, setHeroMemes] = useState([]); // Local memes state
+    const [heroMemes, setHeroMemes] = useState([]);
     const [currentMeme, setCurrentMeme] = useState(null);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [history, setHistory] = useState([]);
     const [scrollY, setScrollY] = useState(0);
     const [isMuted, setIsMuted] = useState(true);
-    const [userWantsAudio, setUserWantsAudio] = useState(false); // Track user intent
+    const [userWantsAudio, setUserWantsAudio] = useState(false);
     const [isPlaying, setIsPlaying] = useState(true);
     const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+    const [networkSpeed, setNetworkSpeed] = useState('medium');
+    const [useSlideshowMode, setUseSlideshowMode] = useState(false);
 
     const videoRef = useRef(null);
     const bgVideoRef = useRef(null);
+
+    // Detect Network Speed on Mount
+    useEffect(() => {
+        const checkSpeed = async () => {
+            const speed = await detectNetworkSpeed();
+            setNetworkSpeed(speed);
+            setUseSlideshowMode(speed === 'slow');
+            console.log('🌐 Network Speed:', speed, '| Slideshow Mode:', speed === 'slow');
+        };
+        checkSpeed();
+    }, []);
 
     // Scroll Listener & Auto-Mute/Resume
     useEffect(() => {
@@ -25,11 +39,9 @@ export default function HeroSection({ user, googleLogin, router, memes: initialM
             const currentScroll = window.scrollY;
             setScrollY(currentScroll);
 
-            // Auto-mute when scrolling down past 300px
             if (currentScroll > 300) {
                 setIsMuted(true);
             } else {
-                // Resume audio if user previously unmuted
                 if (userWantsAudio) {
                     setIsMuted(false);
                 }
@@ -37,7 +49,7 @@ export default function HeroSection({ user, googleLogin, router, memes: initialM
         });
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
-    }, [userWantsAudio]); // Re-bind when intent changes
+    }, [userWantsAudio]);
 
     // Fetch Random/Fresh Memes for Hero
     // Fetch Random/Fresh Memes for Hero
@@ -137,15 +149,15 @@ export default function HeroSection({ user, googleLogin, router, memes: initialM
     useEffect(() => {
         if (!currentMeme) return;
 
-        // If video, we rely on onEnded events (handled in the video tag)
-        if (currentMeme.media_type === "video" || currentMeme.file_url.endsWith(".mp4")) {
+        // If video and NOT in slideshow mode, we rely on onEnded events
+        if (!useSlideshowMode && (currentMeme.media_type === "video" || currentMeme.file_url.endsWith(".mp4"))) {
             return;
         }
 
-        // If Image, just show for 5 seconds then switch
-        const interval = setInterval(pickRandomMeme, 5000);
+        // Slideshow mode OR images: change every 6 seconds
+        const interval = setInterval(pickRandomMeme, 6000);
         return () => clearInterval(interval);
-    }, [currentMeme]);
+    }, [currentMeme, useSlideshowMode]);
 
 
     // Video Event Handlers
@@ -186,21 +198,22 @@ export default function HeroSection({ user, googleLogin, router, memes: initialM
                             <video
                                 ref={bgVideoRef}
                                 key={currentMeme.id + "_bg"}
-                                src={currentMeme.file_url}
+                                src={getOptimizedMediaUrl(currentMeme.file_url, 'slow', 'video')}
                                 autoPlay={isPlaying}
-                                muted={true} // Always mute background to prevent echo
+                                muted={true}
                                 playsInline
                                 crossOrigin="anonymous"
-                                preload="auto"
-                                onError={() => pickRandomMeme()} // Skip if error
+                                preload="none"
+                                onError={() => pickRandomMeme()}
                                 className={`w-full h-full object-cover blur-2xl scale-125 transition-opacity duration-1000 ${isVideoLoaded ? 'opacity-100' : 'opacity-0'}`}
                             />
                         ) : (
                             <img
                                 key={currentMeme.id + "_bg"}
-                                src={currentMeme.thumbnail_url || currentMeme.file_url}
+                                src={getOptimizedMediaUrl(currentMeme.thumbnail_url || currentMeme.file_url, networkSpeed, 'image')}
                                 className="w-full h-full object-cover blur-2xl opacity-100 scale-125"
                                 alt="back-blur"
+                                loading="lazy"
                             />
                         )}
                     </div>
@@ -209,28 +222,42 @@ export default function HeroSection({ user, googleLogin, router, memes: initialM
                 {/* B. MAIN CONTENT (Conditional) */}
                 <div className="absolute inset-0 flex items-center justify-center">
                     {currentMeme && (
-                        (currentMeme.media_type === "video" || currentMeme.file_url.endsWith(".mp4")) ? (
-                            <video
-                                ref={videoRef}
-                                key={currentMeme.id + "_main"}
-                                src={currentMeme.file_url}
-                                autoPlay={isPlaying}
-                                muted={isMuted}
-                                playsInline
-                                crossOrigin="anonymous"
-                                preload="auto"
-                                onLoadedData={() => setIsVideoLoaded(true)}
-                                onEnded={handleVideoEnded}
-                                onError={() => pickRandomMeme()} // Skip if error
-                                className={`h-full w-auto max-w-full object-contain shadow-2xl brightness-110 transition-opacity duration-500 ${isVideoLoaded ? 'opacity-100' : 'opacity-0'}`}
+                        useSlideshowMode ? (
+                            // SLIDESHOW MODE (Slow Connection): Show thumbnails only
+                            <img
+                                key={currentMeme.id + "_slideshow"}
+                                src={getOptimizedMediaUrl(currentMeme.thumbnail_url || currentMeme.file_url, networkSpeed, 'image')}
+                                className="h-full w-auto max-w-full object-contain shadow-2xl brightness-110 transition-opacity duration-500"
+                                alt={currentMeme.title}
+                                loading="eager"
                             />
                         ) : (
-                            <img
-                                key={currentMeme.id + "_main"}
-                                src={currentMeme.thumbnail_url || currentMeme.file_url}
-                                className="h-full w-auto max-w-full object-contain shadow-2xl brightness-110"
-                                alt={currentMeme.title}
-                            />
+                            // VIDEO MODE (Medium/Fast Connection)
+                            (currentMeme.media_type === "video" || currentMeme.file_url.endsWith(".mp4")) ? (
+                                <video
+                                    ref={videoRef}
+                                    key={currentMeme.id + "_main"}
+                                    src={getOptimizedMediaUrl(currentMeme.file_url, networkSpeed, 'video')}
+                                    poster={getOptimizedMediaUrl(currentMeme.thumbnail_url, networkSpeed, 'image')}
+                                    autoPlay={isPlaying}
+                                    muted={isMuted}
+                                    playsInline
+                                    crossOrigin="anonymous"
+                                    preload="metadata"
+                                    onLoadedData={() => setIsVideoLoaded(true)}
+                                    onEnded={handleVideoEnded}
+                                    onError={() => pickRandomMeme()}
+                                    className={`h-full w-auto max-w-full object-contain shadow-2xl brightness-110 transition-opacity duration-500 ${isVideoLoaded ? 'opacity-100' : 'opacity-0'}`}
+                                />
+                            ) : (
+                                <img
+                                    key={currentMeme.id + "_main"}
+                                    src={getOptimizedMediaUrl(currentMeme.thumbnail_url || currentMeme.file_url, networkSpeed, 'image')}
+                                    className="h-full w-auto max-w-full object-contain shadow-2xl brightness-110"
+                                    alt={currentMeme.title}
+                                    loading="eager"
+                                />
+                            )
                         )
                     )}
                 </div>
